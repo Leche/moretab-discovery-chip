@@ -2340,7 +2340,9 @@
           var mt = window.MoreTab;
           if (!mt) return;
           var current = mt.getActiveScreen();
-          var next = current === 'home' ? 'wallet' : 'home';
+          var order = ['home', 'wallet', 'feed'];
+          var idx = order.indexOf(current);
+          var next = order[(idx + 1) % order.length];
           mt.activate(next);
         }
       });

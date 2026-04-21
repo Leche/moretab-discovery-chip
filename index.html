@@ -891,9 +891,119 @@
      ===================================================================== */
   .screen-wallet { display: none; padding-top: 6px; }
   body.wallet-active .bg-gradient { display: none; }
+  body.discovery-b-active .bg-gradient { display: none; }
   .screen-wallet.is-active { display: block; }
   .wallet-screenshot { width: 100%; }
   .wallet-screenshot img { width: 100%; display: block; }
+
+  /* =====================================================================
+     SCREEN: DISCOVERY-B (발견B 칩 선택 시) — Figma 1321:4039 기반
+     feed_01 카드 피드: 큰 썸네일(252px) + 제목 + 본문 + 소스·액션 행
+     ===================================================================== */
+  .screen-discovery-b { display: none; padding: 6px 16px 0; }
+  .screen-discovery-b.is-active { display: flex; flex-direction: column; gap: 32px; }
+  .db-card {
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+  .db-thumb {
+    position: relative;
+    height: 252px;
+    border-radius: 12px;
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    flex-shrink: 0;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  .db-thumb img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+    pointer-events: none;
+  }
+  .db-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+  }
+  .db-title {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #191919;
+    margin: 0;
+    width: 100%;
+  }
+  .db-body {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 152%;
+    color: #191919;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+  .db-info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .db-source {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .db-source .bar {
+    width: 1.5px;
+    height: 14px;
+    background: #b2b2b2;
+    border-radius: 40px;
+    flex-shrink: 0;
+  }
+  .db-source .label {
+    font-size: 15px;
+    font-weight: 400;
+    color: #767676;
+    white-space: nowrap;
+  }
+  /* db-actions: Figma 1321:4204 — outer pl-8, flex, items-start
+     inner: flex, gap-8, items-center (구현상 동일 레벨 CSS로 통합) */
+  .db-actions {
+    display: flex;
+    align-items: flex-start;
+    padding-left: 8px;
+    gap: 8px;
+  }
+  /* 각 버튼: Figma flex, gap-4, h-44, items-center, justify-center, pl-8 */
+  .db-action-btn {
+    display: flex;
+    gap: 4px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0 0 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  /* 아이콘: 24×24 */
+  .db-like-icon { width: 24px; height: 24px; flex-shrink: 0; display: block; }
+  .db-share-icon { width: 24px; height: 24px; flex-shrink: 0; display: block; }
   .screen-home {
     display: none;  /* default off; overridden by .is-active below */
     padding: 6px 16px 0;
@@ -1447,7 +1557,8 @@
       <div class="chip-bar">
         <div class="chip active"><span class="chip-txt">홈</span></div>
         <div class="chip"><span class="chip-txt">지갑</span></div>
-        <div class="chip"><span class="chip-txt">발견</span></div>
+        <div class="chip"><span class="chip-txt">발견A</span></div>
+        <div class="chip"><span class="chip-txt">발견B</span></div>
       </div>
     </header>
 
@@ -1845,6 +1956,321 @@
         </div>
       </section>
       <!-- /screen-wallet -->
+
+      <!-- ===================================================================
+           SCREEN: DISCOVERY-B (발견B 칩 선택 시) — Figma 1321:4039 기반
+           feed_01 카드 17개 피드
+           =================================================================== -->
+      <section class="screen screen-discovery-b" data-screen="discovery-b">
+
+        <!-- 1) 프로젝트 헤일메리 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="images/discover_b/hailmary_main.jpg" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">프로젝트 헤일메리</p>
+            <p class="db-body">앤디 위어의 SF 소설 프로젝트 헤일메리는 정체불명 현상으로 죽어가는 태양과 지구를 구하기 위해 우주선에서 홀로 깨어난 과학자 라일랜드 그레이스의 사투를 그립니다. 과학적 설정, 유머, 서스펜스를 강점으로 한 작품이며, 2026년에는 라이언 고슬링 주연의 영화판도 개봉해 다시 주목받고 있습니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에서 이야기한 주제</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2) 노티드 우베 디저트 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/a33ca12249987b1d36803ce9a19a0a3d4b4698d4.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">노티드 우베 디저트</p>
+            <p class="db-body">노티드 우베 디저트는 보라색 크림과 달콤한 코코넛 맛이 어우러진 이색 디저트입니다. 부드러운 우베 크림이 가득 찬 도넛과 케이크는, 한 번 맛보면 잊을 수 없는 달콤한 경험을 선사합니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에서 이야기한 주제</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3) 사냥개들 시즌2 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/a1949be7ad38fdb54697b0bc52122777823fc77b.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">사냥개들 시즌2 TOP 10</p>
+            <p class="db-body">넷플릭스 '사냥개들' 시즌2가 드디어 공개되었습니다! 김민준, 이해영 주연의 액션 느와르 드라마, 숨 막히는 전개와 화려한 액션으로 시청자들을 사로잡고 있습니다. 지금 바로 TOP 10 순위를 확인하세요!</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에서 이야기한 주제</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4) 신종 코로나 변이 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/2a0d1d226ec020d05790aafe9281868c942b3287.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">신종 코로나 변이 확산</p>
+            <p class="db-body">WHO에 따르면 2026년 3월 기준 전 세계적으로 JN.1이 관심 변이로, XFG·NB.1.8.1·KP.3.1.1·BA.3.2 등이 관찰 대상 변이로 추적되고 있습니다. 일부 지역에서 신규 변이 확산세가 포착됐지만, 현재까지는 중증도 급증 근거는 제한적이며 보건당국은 전파력과 면역회피 가능성을 계속 모니터링 중입니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">트렌드</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5) 이란 호르무즈 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/36d4e527417b1e8aaa3869599247e01398216f0c.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">이란 호르무즈 개방안</p>
+            <p class="db-body">이란이 사실상 봉쇄 상태인 호르무즈 해협과 관련해 오만 측 항로를 이용하는 선박에 대해서는 공격을 자제하겠다는 제한적 개방안을 미국 측에 제시한 것으로 전해졌습니다. 호르무즈 해협은 전 세계 원유·가스 수송의 약 20%가 지나는 전략 요충지여서, 관련 협상 추이에 따라 국제 유가와 공급망 변동성도 계속 주목받고 있습니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">트렌드</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6) 공동주택 공시가격 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/50edd2827bf0ffa39daf443066cb8d826f131707.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">공동주택 공시가격 상승, 보유세 부담 커진다</p>
+            <p class="db-body">2026년 전국 공동주택 공시가격은 평균 9.16% 상승했습니다. 서울은 18.67% 올라 전국 평균의 두 배에 달합니다. 강남 3구는 24.7%, 성동구는 29% 넘게 올랐습니다. 이로 인해 세금 부담이 크게 늘 전망입니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에 공유한 링크</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7) 카페 온도 성수 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/db648dd8fcbe65a94e1daceb22669356fb3a4bfb.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">카페 온도 성수</p>
+            <p class="db-body">자연광이 가득한 2층 통유리 공간 — 성수동 대표 감성 카페로, 시그니처 크림라떼와 수제 디저트가 인기입니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에서 이야기한 장소</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8) 드론 늑구 수색 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/3777957525d30089fe0b0ae315b823af1ddb5b65.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">드론 늑구 수색</p>
+            <p class="db-body">대전 오월드에서 탈출한 늑대 '늑구'를 찾기 위해 당국이 열화상 카메라가 달린 드론을 투입해 야산 일대를 집중 수색하고 있습니다. 다만 비와 넓은 산악 지형 탓에 추적에 어려움을 겪고 있어, 당국은 권역별 수색과 함께 포획틀 설치 등 대응을 병행하고 있습니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에 공유한 링크</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 9) 밤티 말빵 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/7753e9a63081d60f4e65c6ba08b910f01eff03f8.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">밤티 말빵</p>
+            <p class="db-body">중국 SNS에서 시작된 '말빵'이 국내 카페들로 번지며 '밤티 말빵'이라는 이름으로도 화제를 모으고 있어요. 멍한 표정의 말 얼굴 모양 크림빵으로, 피곤한 직장인을 닮은 비주얼이 밈처럼 소비되며 인기를 끄는 중입니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">트렌드</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 10) 떡볶이 연구소 성수점 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/d6cc8dd1612dd2406d5faaafdb7a99af890371fc.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">떡볶이 연구소 성수점</p>
+            <p class="db-body">성수에서 가볍게 한 끼 즐기고 싶을 때 들르기 좋은 떡볶이집 느낌이에요. 떡볶이 연구소 성수점은 이름처럼 메뉴 조합 보는 재미가 있고, 성수 특유의 힙한 분위기까지 더해져 친구랑 들르기 좋더라고요.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">트렌드</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 11) 삼성전자 갤럭시 Z 폴드 7 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/a956b0e648f9d0760da805db9f1849e9d36d6e70.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">삼성전자, 갤럭시 Z 폴드 7 발표</p>
+            <p class="db-body">삼성전자가 차세대 폴더블폰 갤럭시 폴드7을 공식 발표했습니다. 두께 9.9mm의 초슬림 설계와 AI 기반 멀티태스킹 기능이 핵심 변화로 꼽힙니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">트렌드</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 12) 을지로 노가리 골목 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/8ee2d507b0bae904ab505763736b68c03eef6fd7.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">을지로 노가리 골목</p>
+            <p class="db-body">서울 을지로의 대표 핫플레이스 — 레트로 감성과 힙한 바 거리가 공존하는 골목으로, 퇴근 후 즐기기 좋은 곳입니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에서 이야기한 장소</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 13) BTS Hooligan -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/67d4a133074c675f3ad284bd5554e6bf22816d0c.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">BTS Hooligan</p>
+            <p class="db-body">BTS의 'Hooligan'은 정규 앨범 'ARIRANG' 수록곡으로, 타이틀곡 'SWIM'과는 다른 반항적이고 강한 에너지의 분위기로 주목받고 있습니다. RM·제이홉·슈가가 공동 작업에 참여했으며, 4월 8일 뮤직비디오가 공개되면서 대표 인기 B사이드 곡으로 떠올랐습니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에서 이야기한 주제</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 14) 2026 한일가왕전 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/0857138c072aeb9d7c312bbdbcb318d5dad1686d.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">2026 한일가왕전</p>
+            <p class="db-body">MBN '2026 한일가왕전'이 4월 14일 첫 방송을 시작하며 한일 대표 TOP7의 국가대항전 구도를 본격화했습니다. 차지연이 652점으로 1위를 기록했으며, 첫 방송에서 전국 시청률 5.6%로 동시간대 1위에 올랐습니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에서 이야기한 주제</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 15) 목동 아파트 화재 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/64bd6d37f80438bf58c331136ed1d49679358309.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">목동 아파트 화재</p>
+            <p class="db-body">서울 양천구 목동의 5층짜리 아파트 2층에서 4월 16일 오전 불이 나 주민 2명이 연기를 흡입해 병원으로 옮겨졌습니다. 소방당국은 약 40분 만에 불을 완전히 껐으며, 현재 정확한 화재 원인을 조사 중입니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에서 이야기한 주제</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 16) 오베뉴 한남 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/a9b8611e06395da200a5ef634b8241042b9e6949.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">오베뉴 한남</p>
+            <p class="db-body">한남에서 분위기 좋은 카페 찾을 때 들르기 괜찮은 곳이에요. 오베뉴 한남은 개방감 있는 인테리어에 테라스 감성까지 더해져서, 커피 한잔하면서 수다 떨거나 작업하기 좋더라고요.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에서 이야기한 장소</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 17) 애플 WWDC26 -->
+        <div class="db-card">
+          <div class="db-thumb">
+            <img src="http://localhost:3845/assets/c4304e5bcdd62ca464f1a776f83b4054f8cabe65.png" alt="">
+          </div>
+          <div class="db-text">
+            <p class="db-title">애플, WWDC26에서 AI 에이전트 발표</p>
+            <p class="db-body">애플이 WWDC 2026에서 시리 기반 AI 에이전트를 공개했습니다. 앱 간 자동 연동과 개인 맞춤형 추천이 핵심으로, 하반기 iOS 20에 탑재 예정입니다.</p>
+          </div>
+          <div class="db-info-row">
+            <div class="db-source"><span class="bar"></span><span class="label">채팅방에서 공유한 링크</span></div>
+            <div class="db-actions">
+              <button class="db-action-btn" aria-label="좋아요"><img class="db-like-icon" src="http://localhost:3845/assets/1768966ae56b0f472725d1da1ebad325f5710db2.svg" alt=""></button>
+              <button class="db-action-btn" aria-label="공유"><img class="db-share-icon" src="icons/share@3x.png" alt=""></button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+      <!-- /screen-discovery-b -->
 
       <!-- ===================================================================
            SCREEN: HOME (홈 칩 선택 시) — Figma 3982:180303 기반
@@ -2282,7 +2708,7 @@
       if (!chips.length) return;
 
       // 칩 텍스트 → data-screen 매핑 (구현된 화면만)
-      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '발견': 'feed' };
+      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '발견A': 'feed', '발견B': 'discovery-b' };
 
       chips.forEach(function (chip) {
         var label = (chip.textContent || '').trim();
@@ -2305,6 +2731,7 @@
         });
         // 지갑칩 활성 시 bg-gradient 숨김
         document.body.classList.toggle('wallet-active', screenKey === 'wallet');
+        document.body.classList.toggle('discovery-b-active', screenKey === 'discovery-b');
         // 스크롤 리셋 + 헤더 reveal
         window.scrollTo({ top: 0, behavior: 'auto' });
         var topEl = document.querySelector('.top');
@@ -2348,7 +2775,7 @@
           var mt = window.MoreTab;
           if (!mt) return;
           var current = mt.getActiveScreen();
-          var order = ['home', 'wallet', 'feed'];
+          var order = ['home', 'wallet', 'feed', 'discovery-b'];
           var idx = order.indexOf(current);
           var next = order[(idx + 1) % order.length];
           mt.activate(next);

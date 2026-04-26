@@ -75,9 +75,10 @@
        NOTE: overflow:hidden 제거. .top이 sticky이므로 page(<html>)가
        nearest scroll ancestor여야 함. overflow:hidden이 걸리면 .device가
        scroll container가 되어 sticky가 작동하지 않음.
-       background를 #f5f5f5로 두어 콘텐츠가 짧아도 그라데이션 base 색이 끝까지 채워짐. */
+       배경은 white로 두고, 발견A 화면일 때만 .bg-gradient overlay가 회색을 그림.
+       (지갑/홈/발견B 등 나머지 화면은 white 유지) */
     width: 100%;
-    background: #f5f5f5;
+    background: #ffffff;
     position: relative;
     min-height: 100vh;
   }
@@ -94,14 +95,25 @@
     pointer-events: none;
   }
   .bg-gradient::before {
-    /* BG gradation 1 — top 54px: white → #f5f5f5 (Figma 859:28279, visible) */
+    /* BG gradation 1 — top 54px: white → #f5f5f5 */
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 54px;
     background: linear-gradient(to bottom, #ffffff 0%, #f5f5f5 100%);
   }
-  /* Figma 859:28278 (BG gradation 3, bottom fade)는 visible=false 이므로 미사용 */
+  .bg-gradient::after {
+    /* BG gradation 3 — bottom 222px: #f5f5f5 → white (홈 칩 룰)
+       발견A 칩에서는 hide (Figma 859:28278 visible=false) */
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 222px;
+    background: linear-gradient(to bottom, #f5f5f5 0%, #ffffff 100%);
+  }
+  /* 발견A: bottom fade hide + device 자체 회색 → 끝까지 회색이 차도록 */
+  body.feed-active .bg-gradient::after { display: none; }
+  body.feed-active .device { background: #f5f5f5; }
 
   /* ===== TOP =====
      Sticky at top of viewport; hides on scroll down, shows on scroll up.
@@ -1718,7 +1730,7 @@
   }
 </style>
 </head>
-<body>
+<body class="feed-active">
   <div class="device">
     <div class="bg-gradient" aria-hidden="true"></div>
 
@@ -2896,6 +2908,7 @@
         // 지갑칩 활성 시 bg-gradient 숨김
         document.body.classList.toggle('wallet-active', screenKey === 'wallet');
         document.body.classList.toggle('discovery-b-active', screenKey === 'discovery-b');
+        document.body.classList.toggle('feed-active', screenKey === 'feed');
         // 스크롤 리셋 + 헤더 reveal
         window.scrollTo({ top: 0, behavior: 'auto' });
         var topEl = document.querySelector('.top');

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>발견B Option A vs B 도식</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: #f5f5f5;
+    padding: 20px;
+    color: #191919;
+  }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .lead { font-size: 13px; color: #595959; margin-bottom: 16px; }
+  .legend { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .legend span {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: #333;
+  }
+  .legend i {
+    display: inline-block; width: 14px; height: 14px; border-radius: 3px;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .col {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 0.5px 4px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+  .col h2 {
+    font-size: 14px; margin-bottom: 4px;
+  }
+  .col .meta { font-size: 11px; color: #767676; margin-bottom: 12px; }
+  .stack { display: flex; flex-direction: column; gap: 6px; }
+  .card {
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 11px;
+    color: #fff;
+    display: flex; align-items: center; gap: 6px;
+    line-height: 1.3;
+    position: relative;
+  }
+  .card .num {
+    width: 22px; flex: 0 0 22px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 10px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    padding: 2px 0;
+  }
+  .card .label { flex: 1; font-weight: 500; }
+  .card .tag {
+    font-size: 9px; padding: 2px 5px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 3px;
+    flex: 0 0 auto;
+  }
+  .news   { background: #f4551e; height: 42px; }
+  .shorts { background: #6a3ad6; height: 60px; }
+  .feed   { background: #4b8cf3; height: 42px; }
+  .feed.dup { opacity: 0.55; }
+  .footer { font-size: 11px; color: #595959; margin-top: 12px; padding-top: 8px; border-top: 1px solid #eee; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <h1>발견B 피드 구성 비교 — Option A vs B</h1>
+  <p class="lead">실제 카드 사이즈 차이도 박스 높이로 표현 (NEWS 361×361, SHORTS 361×531, FEED 361×385)</p>
+
+  <div class="legend">
+    <span><i style="background:#f4551e"></i>NEWS — card_news_01 (361×361)</span>
+    <span><i style="background:#6a3ad6"></i>SHORTS — shorts_01 (361×531, 가장 큼)</span>
+    <span><i style="background:#4b8cf3"></i>FEED — feed_01 / .db-card (361×385)</span>
+  </div>
+
+  <div class="grid">
+    <!-- ===== Option A ===== -->
+    <div class="col">
+      <h2>Option A — 변환 방식</h2>
+      <div class="meta">총 18개 · Figma 순서 그대로 · 일부 카드는 타입만 변경됨 · 중복 없음</div>
+      <div class="stack">
+        <div class="card news"><span class="num">1</span><span class="label">프로젝트 헤일메리</span><span class="tag">NEWS</span></div>
+        <div class="card feed"><span class="num">2</span><span class="label">노티드 우베 디저트</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">3</span><span class="label">사냥개들 시즌2</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">4</span><span class="label">신종 코로나 변이</span><span class="tag">FEED</span></div>
+        <div class="card shorts"><span class="num">5</span><span class="label">아이폰 에어 (신규)</span><span class="tag">SHORTS</span></div>
+        <div class="card feed"><span class="num">6</span><span class="label">이란 호르무즈</span><span class="tag">FEED</span></div>
+        <div class="card news"><span class="num">7</span><span class="label">공동주택 공시가격</span><span class="tag">NEWS</span></div>
+        <div class="card feed"><span class="num">8</span><span class="label">드론 늑구</span><span class="tag">FEED</span></div>
+        <div class="card shorts"><span class="num">9</span><span class="label">카페 온도 성수</span><span class="tag">SHORTS</span></div>
+        <div class="card feed"><span class="num">10</span><span class="label">밤티 말빵</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">11</span><span class="label">떡볶이 연구소 성수점</span><span class="tag">FEED</span></div>
+        <div class="card news"><span class="num">12</span><span class="label">갤럭시 Z 폴드 7</span><span class="tag">NEWS</span></div>
+        <div class="card feed"><span class="num">13</span><span class="label">을지로 노가리 골목</span><span class="tag">FEED</span></div>
+        <div class="card shorts"><span class="num">14</span><span class="label">BTS Hooligan</span><span class="tag">SHORTS</span></div>
+        <div class="card feed"><span class="num">15</span><span class="label">2026 한일가왕전</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">16</span><span class="label">목동 아파트 화재</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">17</span><span class="label">오베뉴 한남</span><span class="tag">FEED</span></div>
+        <div class="card news"><span class="num">18</span><span class="label">애플 WWDC26</span><span class="tag">NEWS</span></div>
+      </div>
+      <div class="footer">
+        ✅ 디자인과 1:1 일치<br>
+        ⚠️ 기존 사이트의 7개 카드(헤일메리·공동주택·갤럭시·WWDC·카페온도·BTS)는 .db-card → 신규 타입으로 변환됨
+      </div>
+    </div>
+
+    <!-- ===== Option B ===== -->
+    <div class="col">
+      <h2>Option B — 추가 방식</h2>
+      <div class="meta">총 24개 · 사이트 17개 그대로 + 신규 7개 추가 · 6개 콘텐츠 중복</div>
+      <div class="stack">
+        <div class="card feed"><span class="num">1</span><span class="label">프로젝트 헤일메리</span><span class="tag">FEED 기존</span></div>
+        <div class="card news"><span class="num">2</span><span class="label">프로젝트 헤일메리 (중복)</span><span class="tag">NEWS 신규</span></div>
+        <div class="card feed"><span class="num">3</span><span class="label">노티드 우베 디저트</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">4</span><span class="label">사냥개들 시즌2</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">5</span><span class="label">신종 코로나 변이</span><span class="tag">FEED</span></div>
+        <div class="card shorts"><span class="num">6</span><span class="label">아이폰 에어 (only 신규)</span><span class="tag">SHORTS</span></div>
+        <div class="card feed"><span class="num">7</span><span class="label">이란 호르무즈</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">8</span><span class="label">공동주택 공시가격</span><span class="tag">FEED 기존</span></div>
+        <div class="card news"><span class="num">9</span><span class="label">공동주택 공시가격 (중복)</span><span class="tag">NEWS 신규</span></div>
+        <div class="card feed"><span class="num">10</span><span class="label">카페 온도 성수</span><span class="tag">FEED 기존</span></div>
+        <div class="card shorts"><span class="num">11</span><span class="label">카페 온도 성수 (중복)</span><span class="tag">SHORTS 신규</span></div>
+        <div class="card feed"><span class="num">12</span><span class="label">드론 늑구</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">13</span><span class="label">밤티 말빵</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">14</span><span class="label">떡볶이 연구소</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">15</span><span class="label">갤럭시 Z 폴드 7</span><span class="tag">FEED 기존</span></div>
+        <div class="card news"><span class="num">16</span><span class="label">갤럭시 Z 폴드 7 (중복)</span><span class="tag">NEWS 신규</span></div>
+        <div class="card feed"><span class="num">17</span><span class="label">을지로 노가리</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">18</span><span class="label">BTS Hooligan</span><span class="tag">FEED 기존</span></div>
+        <div class="card shorts"><span class="num">19</span><span class="label">BTS Hooligan (중복)</span><span class="tag">SHORTS 신규</span></div>
+        <div class="card feed"><span class="num">20</span><span class="label">2026 한일가왕전</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">21</span><span class="label">목동 아파트 화재</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">22</span><span class="label">오베뉴 한남</span><span class="tag">FEED</span></div>
+        <div class="card feed"><span class="num">23</span><span class="label">애플 WWDC26</span><span class="tag">FEED 기존</span></div>
+        <div class="card news"><span class="num">24</span><span class="label">애플 WWDC26 (중복)</span><span class="tag">NEWS 신규</span></div>
+      </div>
+      <div class="footer">
+        ✅ 기존 사이트의 17개 카드 변경 없음 (텍스트·구조 유지)<br>
+        ⚠️ 6개 콘텐츠가 두 가지 타입으로 중복 노출됨<br>
+        ⚠️ 피드가 더 길어짐 (스크롤 ~30% 증가)
+      </div>
+    </div>
+  </div>
+</body>
+</html>

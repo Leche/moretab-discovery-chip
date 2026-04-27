@@ -61,6 +61,9 @@
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   }
   html, body { margin: 0; padding: 0; }
+  /* 전역 스크롤바 숨김 — 디자인 프리뷰 목적 */
+  html, body, * { scrollbar-width: none; -ms-overflow-style: none; }
+  ::-webkit-scrollbar { width: 0; height: 0; display: none; }
   body {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     background: #ffffff;
@@ -910,7 +913,7 @@
      ===================================================================== */
   .screen { display: none; }
   .screen.is-active { display: block; }
-  .screen-feed { padding-top: 6px; }
+  .screen-feed { padding: 6px 16px 0; }
   .screen-feed.is-active { display: flex; flex-direction: column; gap: 12px; }
 
   /* =====================================================================
@@ -1103,6 +1106,418 @@
   .fcard__ico { width: 24px; height: 24px; flex: 0 0 auto; color: #191919; display: block; }
 
   @media (max-width: 360px) { .fcard { max-width: 100%; } }
+
+  /* =====================================================================
+     ===== BOTTOM SHEET (Figma 940:41070) ================================
+     발견A 카드 클릭 시: dim overlay + slide-up sheet, 둘 다 1s에 동시 시작/종료
+     ===================================================================== */
+  .bs-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0);
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    pointer-events: none;
+    transition: background 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .bs-overlay[hidden] { display: none; }
+  .bs-overlay.is-open {
+    background: rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+  }
+  .bs-sheet {
+    width: 100%;
+    max-width: 393px;
+    height: 90vh;
+    max-height: 90vh;
+    background: #ffffff;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.42s cubic-bezier(0.34, 1.18, 0.5, 1);  /* iOS-like spring tension */
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #191919;
+    touch-action: none;  /* drag handler를 위한 기본 터치 동작 비활성 */
+  }
+  /* drag 중에는 transition off — 위치를 즉시 따라옴 */
+  .bs-sheet.is-dragging { transition: none; }
+  .bs-overlay.is-open .bs-sheet { transform: translateY(0); }
+
+  /* Handler — drag로 시트 내릴 수 있음 */
+  .bs-handler {
+    flex: 0 0 20px;
+    position: relative;
+    background: #fff;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .bs-handler:active { cursor: grabbing; }
+  .bs-handle {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px; height: 4px;
+    background: #949494;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+
+  /* 스크롤 영역 */
+  .bs-scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* navi: title + sum + divider */
+  .bs-navi { background: #fff; }
+  .bs-title-row {
+    padding: 16px 20px;
+  }
+  .bs-title {
+    margin: 0;
+    font-weight: 700; font-size: 24px; line-height: 1.4;
+    color: #191919;
+  }
+  .bs-sum {
+    padding: 0 20px;
+    display: flex; flex-direction: column;
+    gap: 8px; justify-content: center;
+  }
+  .bs-sum-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    border-radius: 50px;
+  }
+  .bs-sum-ico { width: 12px; height: 12px; flex: 0 0 auto; display: block; }
+  .bs-sum-label {
+    font-weight: 600; font-size: 16px; line-height: 1; color: #191919;
+  }
+  .bs-sum-text {
+    margin: 0;
+    font-weight: 400; font-size: 16px; line-height: 1.68; color: #191919;
+  }
+
+  /* Divider 56px (15 좌우 padding, h:1 line) */
+  .bs-divider-56 {
+    height: 56px;
+    padding: 20px 15px;
+    display: flex; align-items: center; justify-content: center;
+    box-sizing: border-box;
+  }
+  .bs-divider-line {
+    width: 100%; height: 1px;
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  /* 이미지영역: 4 thumbnails (112×112) */
+  .bs-imgrow {
+    display: flex; gap: 8px;
+    padding: 0 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .bs-imgrow::-webkit-scrollbar { display: none; }
+  .bs-thumb {
+    width: 112px; height: 112px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    flex: 0 0 112px;
+    position: relative;
+    background: #f5f5f5;
+  }
+  .bs-thumb img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .bs-thumb--more .bs-thumb-more-cover {
+    position: absolute; inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+  }
+  .bs-thumb--more .bs-thumb-more-label {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-weight: 600; font-size: 14px; line-height: 1.6;
+    white-space: nowrap;
+  }
+
+  /* Body, Header, bullets */
+  .bs-space { width: 100%; flex: 0 0 auto; }
+  .bs-body {
+    padding: 0 20px;
+  }
+  .bs-body p {
+    margin: 0;
+    font-weight: 400; font-size: 16px; line-height: 1.56;
+    color: #191919;
+  }
+  .bs-header {
+    padding: 0 20px;
+  }
+  .bs-header h3 {
+    margin: 0;
+    font-weight: 600; font-size: 20px; line-height: 1.4;
+    color: #191919;
+  }
+  .bs-bullets {
+    margin: 0;
+    padding: 0 20px;
+    list-style: none;
+  }
+  .bs-bullets li {
+    position: relative;
+    padding-left: 14px;
+    font-weight: 400; font-size: 16px; line-height: 1.56;
+    color: #191919;
+  }
+  .bs-bullets li + li { margin-top: 8px; }
+  .bs-bullets li::before {
+    content: "";
+    position: absolute;
+    left: 4px; top: 11px;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: #191919;
+  }
+  .bs-bullets li strong {
+    font-weight: 700;
+  }
+
+  /* AI 고지 */
+  .bs-ai-notice {
+    display: flex; gap: 14px;
+    align-items: stretch;
+    padding: 0 20px 0 16px;
+  }
+  .bs-ai-bar {
+    width: 2px;
+    background: rgba(0, 0, 0, 0.1);
+    flex: 0 0 2px;
+  }
+  .bs-ai-text { flex: 1 1 auto; min-width: 0; }
+  .bs-ai-line1 {
+    margin: 0;
+    font-weight: 400; font-size: 14px; line-height: 1.5;
+    color: #767676;
+  }
+  .bs-ai-link {
+    display: inline-block; margin-top: 0;
+    font-weight: 400; font-size: 13px; line-height: 1.5;
+    color: #767676; text-decoration: underline;
+  }
+
+  /* 피드백 */
+  .bs-feedback {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+  }
+  .bs-fb-buttons {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .bs-fb-btn {
+    width: 38px; height: 38px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 36px;
+    background: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #191919;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bs-fb-btn svg { width: 20px; height: 20px; display: block; }
+  /* fb 아이콘 (사용자 요청 14×14) */
+  .bs-fb-ico { width: 14px; height: 14px; display: block; }
+  /* 별로예요는 좋아요 아이콘을 180° 회전 (Figma Like/Not Interested 동일 vector) */
+  .bs-fb-btn--down .bs-fb-ico { transform: rotate(180deg); }
+
+  .bs-source-btn {
+    height: 40px;
+    padding: 7px 14px 7px 13px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 36px;
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #fff;
+  }
+  .bs-source-favs {
+    display: inline-flex; align-items: center;
+    padding: 2px 5px 2px 0;
+  }
+  .bs-fav {
+    width: 20px; height: 20px;
+    margin-right: -5px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .bs-fav img {
+    width: 20px; height: 20px;
+    display: block;
+  }
+  .bs-source-label {
+    font-weight: 600; font-size: 15px; line-height: 1.5;
+    color: #696969;
+    white-space: nowrap;
+  }
+
+  /* 관련질문 */
+  .bs-related { display: flex; flex-direction: column; }
+  .bs-query {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+    padding: 0 20px;
+    text-decoration: none;
+    color: #424242;
+  }
+  .bs-query-text {
+    flex: 1 1 auto; min-width: 0;
+    font-weight: 500; font-size: 16px; line-height: 1.52;
+    color: #424242;
+  }
+  .bs-query-arrow { width: 20px; height: 20px; flex: 0 0 20px; display: block; }
+  .bs-divider-thin {
+    height: 28px;
+    padding: 14px 15px;
+    display: flex; align-items: center; justify-content: center;
+    box-sizing: border-box;
+  }
+  .bs-divider-thin::before {
+    content: "";
+    width: 100%; height: 1px;
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  /* =====================================================================
+     ===== BS Search Area (Figma 946:41265) ==============================
+     bs-sheet 내부 하단에 floating, 두 요소: [input 1fr] gap12 [close 42px]
+     - drop-shadow 0 0 2px rgba(0,0,0,0.06) 그룹 적용
+     - input: 42h, 12px 24radius, white60 + 1px white90 border + blur7 + shadow
+     - close: 42×42, SVG로 backdrop-blur+drop-shadow 포함된 원형 bg + X 16×16
+     ===================================================================== */
+  /* Search bar bg progressive blur (Figma 946:41261) — 10-layer overlap 패턴
+     각 layer가 자기만의 좁은 영역(top + height)에 위치하고, layer 안에서 mask로 fade-in.
+     인접 layer와 overlap하며 강도 누적 → Chrome edge artifact 분산되어 보이지 않음.
+     White gradient는 9-stop 다단계 곡선으로 derivative 꺾임 분산. */
+  .bs-search-bg {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 0;
+    height: 158px;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .bs-search-bg > .bs-blur {
+    position: absolute;
+    left: 0; right: 0;
+    backdrop-filter: blur(var(--b)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--b)) saturate(160%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 var(--mask-end));
+            mask-image: linear-gradient(to bottom, transparent 0%, #000 var(--mask-end));
+  }
+  .bs-search-bg > .bs-blur:nth-child(1)  { --b: 0.5px; --mask-end: 20%;  top: 0;   height: 20%; }
+  .bs-search-bg > .bs-blur:nth-child(2)  { --b: 1px;   --mask-end: 30%;  top: 5%;  height: 25%; }
+  .bs-search-bg > .bs-blur:nth-child(3)  { --b: 2px;   --mask-end: 40%;  top: 12%; height: 28%; }
+  .bs-search-bg > .bs-blur:nth-child(4)  { --b: 3px;   --mask-end: 50%;  top: 20%; height: 30%; }
+  .bs-search-bg > .bs-blur:nth-child(5)  { --b: 5px;   --mask-end: 55%;  top: 28%; height: 32%; }
+  .bs-search-bg > .bs-blur:nth-child(6)  { --b: 7px;   --mask-end: 60%;  top: 37%; height: 33%; }
+  .bs-search-bg > .bs-blur:nth-child(7)  { --b: 9px;   --mask-end: 65%;  top: 46%; height: 35%; }
+  .bs-search-bg > .bs-blur:nth-child(8)  { --b: 11px;  --mask-end: 70%;  top: 55%; height: 36%; }
+  .bs-search-bg > .bs-blur:nth-child(9)  { --b: 13px;  --mask-end: 80%;  top: 64%; height: 36%; }
+  .bs-search-bg > .bs-blur:nth-child(10) { --b: 15px;  --mask-end: 100%; top: 72%; height: 28%; }
+
+  /* White gradient — 9-stop 다단계 곡선 (S-curve 근사, derivative 꺾임 분산) */
+  .bs-search-bg > .bs-grad {
+    position: absolute;
+    left: 0; right: 0;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(
+      to bottom,
+      rgba(247,247,247,0)    0%,
+      rgba(247,247,247,0.15) 18%,
+      rgba(247,247,247,0.35) 32%,
+      rgba(247,247,247,0.55) 45%,
+      rgba(247,247,247,0.72) 57%,
+      rgba(247,247,247,0.84) 67%,
+      rgba(247,247,247,0.93) 76%,
+      rgba(247,247,247,0.97) 84%,
+      rgba(247,247,247,1.00) 100%
+    );
+  }
+  .bs-search {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 42px;
+    z-index: 2;
+    pointer-events: none;       /* 갭 영역은 스크롤 통과 */
+    display: flex;
+    justify-content: center;
+  }
+  .bs-search-area {
+    width: 369px;
+    max-width: calc(100% - 24px);
+    height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    /* drop-shadow는 자식의 backdrop-filter를 격리시키므로 사용 금지 — 각 자식 box-shadow로 분산 */
+    pointer-events: auto;
+  }
+  .bs-search-input {
+    flex: 1 1 auto; min-width: 0;
+    height: 42px;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 24px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.06), 0 3px 16px rgba(0, 0, 0, 0.15);
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 17px 0 11px;
+  }
+  .bs-search-input__logo {
+    flex: 0 0 28px;
+    width: 28px; height: 28px;
+    display: block;
+  }
+  .bs-search-input__text {
+    flex: 1 1 auto; min-width: 0;
+    font-weight: 400; font-size: 16px; line-height: 1.25;
+    color: #191919;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* close 버튼: input과 동일 visual treatment(원형) — 14px backdrop blur + white60 + white90 border */
+  .bs-search-close {
+    flex: 0 0 42px;
+    width: 42px; height: 42px;
+    position: relative;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.06), 0 3px 16px rgba(0, 0, 0, 0.15);
+    padding: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bs-search-close__x {
+    position: absolute;
+    width: 16px; height: 16px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    display: block;
+  }
+
+  /* 모바일에서 sheet 자체 너비 */
+  @media (max-width: 393px) { .bs-sheet { max-width: 100%; } }
 
   /* =====================================================================
      ===== SCREEN: HOME (홈 칩 선택 시) ===================================
@@ -2541,6 +2956,178 @@
 
     </main>
 
+    <!-- ===================================================================
+         Bottom Sheet — Figma 940:41070 (노티드 우베 디저트 상세)
+         발견A 카드 클릭 시 오버레이 dim + slide-up 1s 동시
+         =================================================================== -->
+    <div class="bs-overlay" id="bsOverlay" hidden aria-hidden="true">
+      <div class="bs-sheet" role="dialog" aria-modal="true" aria-label="노티드 우베 디저트 상세">
+
+        <!-- Handler (스크롤 시 상단 고정) -->
+        <div class="bs-handler"><span class="bs-handle"></span></div>
+
+        <!-- 스크롤 영역 -->
+        <div class="bs-scroll">
+
+          <!-- navi (227h): 제목 + 핵심 요약 + Divider -->
+          <div class="bs-navi">
+            <div class="bs-title-row">
+              <h2 class="bs-title">노티드 우베 디저트</h2>
+            </div>
+            <div class="bs-sum">
+              <div class="bs-sum-tag">
+                <img class="bs-sum-ico" src="images/discover_a/bs-summary-icon.svg" alt="" aria-hidden="true">
+                <span class="bs-sum-label">핵심 요약</span>
+              </div>
+              <p class="bs-sum-text">노티드는 2026년 4월 10일, 우베를 활용한 6종 디저트 신메뉴를 출시했습니다. 보랏빛 도넛과 음료는 고소한 풍미 및 SNS 인증샷 용으로 인기입니다.</p>
+            </div>
+            <div class="bs-divider-56"><span class="bs-divider-line"></span></div>
+          </div>
+
+          <!-- 이미지영역: 4 thumbnails (last has "더 보기" overlay) -->
+          <div class="bs-imgrow">
+            <div class="bs-thumb"><img src="images/discover_a/bs-thumb-1.png" alt=""></div>
+            <div class="bs-thumb"><img src="images/discover_a/bs-thumb-2.png" alt=""></div>
+            <div class="bs-thumb"><img src="images/discover_a/bs-thumb-3.png" alt=""></div>
+            <div class="bs-thumb bs-thumb--more">
+              <img src="images/discover_a/bs-thumb-4.png" alt="">
+              <span class="bs-thumb-more-cover"></span>
+              <span class="bs-thumb-more-label">더 보기</span>
+            </div>
+          </div>
+
+          <div class="bs-space" style="height:32px"></div>
+
+          <!-- Body (intro paragraph) -->
+          <div class="bs-body">
+            <p>노티드는 2026년 4월 10일, 글로벌 디저트 시장의 새로운 트렌드로 떠오른 우베(Ube) 를 활용한 신메뉴 6종을 출시했습니다. 보라색 참마인 우베를 테마로 하여 시각적인 즐거움과 독특한 풍미를 강조한 것이 특징입니다.</p>
+          </div>
+
+          <div class="bs-space" style="height:32px"></div>
+
+          <!-- Section 1 -->
+          <div class="bs-header"><h3>1. 2026년 신상 메뉴 라인업 (6종)</h3></div>
+          <div class="bs-space" style="height:12px"></div>
+          <div class="bs-body">
+            <p>이번 라인업은 우베 특유의 선명한 보랏빛 색감과 고소한 바닐라 향을 극대화한 도넛 2종과 음료 4종으로 구성되었습니다.</p>
+          </div>
+          <div class="bs-space" style="height:24px"></div>
+          <ul class="bs-bullets">
+            <li><strong>우베 밀키크림 도넛: </strong>진한 우베 커스타드와 부드러운 우베 생크림을 가득 채워 우베 본연의 풍부한 맛을 느낄 수 있는 대표 메뉴입니다.</li>
+            <li><strong>우베 두바이 퍼플 도넛: </strong>최근 유행하는 두바이 초콜릿 스타일을 접목했습니다. 우베 페이스트에 바삭한 카다이프와 화이트 초콜릿을 더해 부드러움과 크리스피한 식감을 동시에 잡았습니다.</li>
+          </ul>
+
+          <div class="bs-space" style="height:32px"></div>
+
+          <!-- Section 2 -->
+          <div class="bs-header"><h3>2. 맛 후기 및 주요 특징</h3></div>
+          <div class="bs-space" style="height:12px"></div>
+          <ul class="bs-bullets">
+            <li><strong>풍미와 식감: </strong>우베는 자색고구마와 비슷하지만 더 은은한 단맛과 견과류 같은 고소함, 바닐라 향이 느껴진다는 평이 많습니다. 특히 우베 두바이 퍼플 도넛은 카다이프의 바삭함이 더해져 식감의 재미를 준다는 긍정적인 반응을 얻고 있습니다.</li>
+            <li><strong>비주얼: </strong>선명한 보랏빛 컬러가 SNS 인증샷을 즐기는 MZ세대의 취향을 저격하며 ‘보랏빛 향연’이라는 수식어로 불리고 있습니다.</li>
+            <li><strong>웰니스 트렌드: </strong>안토시아닌과 식이섬유가 풍부한 건강 식재료인 우베를 사용하여, 단순한 단맛을 넘어 건강한 디저트라는 인상을 줍니다.</li>
+          </ul>
+
+          <div class="bs-space" style="height:32px"></div>
+
+          <!-- Section 3 -->
+          <div class="bs-header"><h3>3. 추가 정보 및 이벤트</h3></div>
+          <div class="bs-space" style="height:12px"></div>
+          <ul class="bs-bullets">
+            <li><strong>할인 프로모션: </strong>출시를 기념해 2026년 4월 30일까지 우베 도넛과 음료를 함께 구매하는 세트 고객에게 10% 할인 혜택을 제공했습니다.</li>
+            <li><strong>연관 신제품: </strong>4월 30일부터는 배민B마트 전용 제품으로 타로 크림과 우유 크림이 어우러진 타로 밀크 롤케이크도 새롭게 선보였습니다.</li>
+          </ul>
+
+          <div class="bs-space" style="height:16px"></div>
+
+          <!-- AI 고지 -->
+          <div class="bs-ai-notice">
+            <span class="bs-ai-bar"></span>
+            <div class="bs-ai-text">
+              <p class="bs-ai-line1">AI가 생성한 내용으로 검색 시점에 따라 답변이 달라질 수 있어요. 중요한 정보는 한번 더 확인해 주세요.</p>
+              <a class="bs-ai-link" href="#">더 알아보기</a>
+            </div>
+          </div>
+
+          <div class="bs-space" style="height:24px"></div>
+
+          <!-- 피드백 row -->
+          <div class="bs-feedback">
+            <div class="bs-fb-buttons">
+              <button type="button" class="bs-fb-btn" aria-label="좋아요">
+                <img class="bs-fb-ico" src="images/discover_a/bs-icon-like.svg" alt="" aria-hidden="true">
+              </button>
+              <button type="button" class="bs-fb-btn bs-fb-btn--down" aria-label="별로예요">
+                <img class="bs-fb-ico" src="images/discover_a/bs-icon-like.svg" alt="" aria-hidden="true">
+              </button>
+            </div>
+            <div class="bs-source-btn">
+              <div class="bs-source-favs">
+                <span class="bs-fav"><img src="images/discover_a/bs-fav-naver.png" alt=""></span>
+                <span class="bs-fav"><img src="images/discover_a/bs-fav-google.png" alt=""></span>
+                <span class="bs-fav"><img src="images/discover_a/bs-fav-daum.png" alt=""></span>
+              </div>
+              <span class="bs-source-label">출처</span>
+            </div>
+          </div>
+
+          <div class="bs-space" style="height:24px"></div>
+
+          <!-- 관련질문 -->
+          <div class="bs-related">
+            <div class="bs-divider-56"><span class="bs-divider-line"></span></div>
+            <div class="bs-header"><h3>관련된 질문</h3></div>
+            <div class="bs-space" style="height:24px"></div>
+            <a class="bs-query" href="#">
+              <span class="bs-query-text">노티드 우베 음료 라인업</span>
+              <img class="bs-query-arrow" src="images/discover_a/bs-query-arrow.svg" alt="" aria-hidden="true">
+            </a>
+            <div class="bs-divider-thin"></div>
+            <a class="bs-query" href="#">
+              <span class="bs-query-text">우베 디저트 신상 추천 2026</span>
+              <img class="bs-query-arrow" src="images/discover_a/bs-query-arrow.svg" alt="" aria-hidden="true">
+            </a>
+            <div class="bs-divider-thin"></div>
+            <a class="bs-query" href="#">
+              <span class="bs-query-text">노티드 우베 할인 프로모션</span>
+              <img class="bs-query-arrow" src="images/discover_a/bs-query-arrow.svg" alt="" aria-hidden="true">
+            </a>
+            <div class="bs-space" style="height:126px"></div>
+          </div>
+
+        </div>
+
+        <!-- Search bar bg (Figma 946:41261) — 10 blur layers + multi-stop white gradient -->
+        <div class="bs-search-bg" aria-hidden="true">
+          <div class="bs-blur"></div>
+          <div class="bs-blur"></div>
+          <div class="bs-blur"></div>
+          <div class="bs-blur"></div>
+          <div class="bs-blur"></div>
+          <div class="bs-blur"></div>
+          <div class="bs-blur"></div>
+          <div class="bs-blur"></div>
+          <div class="bs-blur"></div>
+          <div class="bs-blur"></div>
+          <div class="bs-grad"></div>
+        </div>
+
+        <!-- Search area (Figma 946:41265) — 시트 하단 floating, [input]+[close] -->
+        <div class="bs-search">
+          <div class="bs-search-area">
+            <div class="bs-search-input">
+              <img class="bs-search-input__logo" src="images/discover_a/bs-sb-kanana-logo.svg" alt="" aria-hidden="true">
+              <span class="bs-search-input__text">노티드 우베 디저트</span>
+            </div>
+            <button type="button" class="bs-search-close" aria-label="닫기">
+              <img class="bs-search-close__x" src="images/discover_a/bs-sb-close-x.svg" alt="" aria-hidden="true">
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Bottom Tab Bar — Figma 1321:4018 -->
     <footer class="tab-bar">
       <!-- 5 Tab row (49px, white) -->
@@ -3193,6 +3780,116 @@
           banner.style.display = 'none';
         }, 320);
       });
+    })();
+
+    /* 발견A 카드(노티드 우베 디저트) 클릭 → 바텀시트 열기
+       dim overlay + slide-up sheet 동시 0.42s (iOS 텐션 곡선)
+       닫기: dim 영역 클릭, ESC, 또는 handler를 아래로 drag */
+    (function () {
+      var overlay = document.getElementById('bsOverlay');
+      if (!overlay) return;
+      var sheet = overlay.querySelector('.bs-sheet');
+      var handler = overlay.querySelector('.bs-handler');
+      if (!sheet || !handler) return;
+
+      var DURATION = 420; // CSS transition(0.42s)과 동기
+
+      // 노티드 우베 디저트 .fcard
+      var target = null;
+      document.querySelectorAll('.screen-feed .fcard').forEach(function (c) {
+        var t = c.querySelector('.fcard__title');
+        if (t && t.textContent.trim() === '노티드 우베 디저트') target = c;
+      });
+      if (!target) return;
+
+      target.style.cursor = 'pointer';
+      target.setAttribute('tabindex', '0');
+      target.setAttribute('role', 'button');
+
+      var closeTimer = null;       // close()의 cleanup 타이머 — open() 시 반드시 취소
+      var openSuppressUntil = 0;   // open 직후 합성 click(고스트) 무시할 deadline
+
+      function open() {
+        if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+        overlay.hidden = false;
+        // 카드 탭의 합성 click이 오버레이로 전파되어 즉시 close되는 것을 방지
+        openSuppressUntil = Date.now() + 350;
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { overlay.classList.add('is-open'); });
+        });
+        document.body.style.overflow = 'hidden';
+      }
+      function close() {
+        if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+        overlay.classList.remove('is-open');
+        sheet.style.transform = '';  // drag로 변경된 inline transform 초기화
+        closeTimer = setTimeout(function () {
+          overlay.hidden = true;
+          document.body.style.overflow = '';
+          closeTimer = null;
+        }, DURATION);
+      }
+
+      target.addEventListener('click', function (e) {
+        if (e.target.closest('button')) return;
+        open();
+      });
+      target.addEventListener('keydown', function (e) {
+        if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) {
+          e.preventDefault(); open();
+        }
+      });
+      overlay.addEventListener('click', function (e) {
+        if (Date.now() < openSuppressUntil) return;  // 고스트 클릭 무시
+        if (e.target === overlay) close();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('is-open')) close();
+      });
+      var searchClose = sheet.querySelector('.bs-search-close');
+      if (searchClose) searchClose.addEventListener('click', function () { close(); });
+
+      /* === bs-handler drag-to-close === */
+      var dragging = false;
+      var startY = 0;
+      var deltaY = 0;
+      var THRESHOLD = 80;  // 80px 이상 내리면 닫힘
+
+      function onDown(e) {
+        if (!overlay.classList.contains('is-open')) return;
+        dragging = true;
+        startY = (e.touches ? e.touches[0].clientY : e.clientY);
+        deltaY = 0;
+        sheet.classList.add('is-dragging');
+        e.preventDefault();
+      }
+      function onMove(e) {
+        if (!dragging) return;
+        var y = (e.touches ? e.touches[0].clientY : e.clientY);
+        deltaY = Math.max(0, y - startY); // 아래로만
+        sheet.style.transform = 'translateY(' + deltaY + 'px)';
+        e.preventDefault();
+      }
+      function onUp() {
+        if (!dragging) return;
+        dragging = false;
+        sheet.classList.remove('is-dragging');
+        if (deltaY >= THRESHOLD) {
+          close();
+        } else {
+          // spring back
+          sheet.style.transform = '';
+        }
+      }
+
+      handler.addEventListener('pointerdown', onDown);
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
+      // touch fallback
+      handler.addEventListener('touchstart', onDown, { passive: false });
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend', onUp);
     })();
   </script>
 </body>

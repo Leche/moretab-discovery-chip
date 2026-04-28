@@ -1184,11 +1184,22 @@
   .fcard--skeleton .fcard__desc .skel { height: 16px; border-radius: 4px; }
   .fcard--skeleton .fcard__desc .skel:nth-child(1) { width: 100%; }
   .fcard--skeleton .fcard__desc .skel:nth-child(2) { width: 70%; }
-  /* strip: 실제 strip과 같은 높이 110px */
+  /* strip: 실제 트리플 strip과 동일한 3분할 레이아웃 (gap 2px, 양 끝 12px radius) */
   .fcard--skeleton .fcard__strip {
-    height: 110px; border-radius: 12px; overflow: hidden;
+    height: 110px;
+    display: flex; gap: 2px;
   }
-  .fcard--skeleton .fcard__strip .skel { height: 100%; width: 100%; border-radius: 12px; }
+  .fcard--skeleton .fcard__strip .skel {
+    flex: 1 1 0; min-width: 0; height: 100%; border-radius: 0;
+  }
+  .fcard--skeleton .fcard__strip .skel:first-child {
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+  }
+  .fcard--skeleton .fcard__strip .skel:last-child {
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
   /* foot — cat 텍스트 자리에 1개 shimmer, like/share 아이콘 자리에 원 shimmer 2개 */
   .fcard--skeleton .fcard__cat .fcard__bar { display: none; }
   .fcard--skeleton .fcard__cat .skel { display: block; width: 36px; height: 14px; border-radius: 4px; }
@@ -3911,7 +3922,9 @@
 
       var closeTimer = null;       // close()의 cleanup 타이머 — open() 시 반드시 취소
       var openSuppressUntil = 0;   // open 직후 합성 click(고스트) 무시할 deadline
-      var sheetOrigin = null;      // 'fcard' (발견A) | 'dbcard' (발견B) — 쿼리 클릭 regen 가드
+      var sheetOrigin = null;      // 'fcard' (발견A) | 'dbcard' (발견B) — regen 가드
+      var triggerRegen = null;     // close()에서 호출 — 함수는 아래에서 정의
+      var DEFAULT_REGEN_QUERY = '노티드 우베 음료 라인업';
 
       function open() {
         if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
@@ -3928,6 +3941,14 @@
       }
       function close() {
         if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+        // 어떤 경로(드래그/dim 클릭/ESC/X/쿼리)로 닫히든 — 발견A에서 열린 세션이면 default 쿼리 regen (1회)
+        if (sheetOrigin === 'fcard' && target && feedRoot && !addedQueries.has(DEFAULT_REGEN_QUERY) && typeof triggerRegen === 'function') {
+          var data = QUERY_CARDS[DEFAULT_REGEN_QUERY];
+          if (data) {
+            addedQueries.add(DEFAULT_REGEN_QUERY);
+            triggerRegen({ qText: DEFAULT_REGEN_QUERY, data: data });
+          }
+        }
         overlay.classList.remove('is-open');
         sheet.style.transform = '';  // drag로 변경된 inline transform 초기화
         closeTimer = setTimeout(function () {
@@ -4006,7 +4027,7 @@
       var addedQueries = new Set();
       var feedRoot = document.querySelector('.screen-feed');
 
-      // 스켈레톤 — title 1, desc 2줄, strip, foot에 cat shimmer 1 + act shimmer 2
+      // 스켈레톤 — title 1, desc 2줄, strip 3분할 (양 끝 라운드), foot에 cat shimmer 1 + act shimmer 2
       function buildSkeletonInner() {
         return ''
           + '<div class="fcard__inner">'
@@ -4017,7 +4038,11 @@
           +         '<span class="skel"></span>'
           +         '<span class="skel"></span>'
           +       '</p>'
-          +       '<div class="fcard__strip"><span class="skel"></span></div>'
+          +       '<div class="fcard__strip">'
+          +         '<span class="skel"></span>'
+          +         '<span class="skel"></span>'
+          +         '<span class="skel"></span>'
+          +       '</div>'
           +     '</div>'
           +   '</div>'
           + '</div>'
@@ -4060,54 +4085,44 @@
           + '</div>';
       }
 
+      // 쿼리 클릭 — 단순히 close()만 호출. close 시점에 default 쿼리 regen이 자동 트리거됨.
       sheet.querySelectorAll('.bs-query').forEach(function (qEl) {
         qEl.addEventListener('click', function (e) {
           e.preventDefault();
-          // 발견B(.dbcard)에서 열린 경우 — 카드 재생성 인터랙션 제외, 시트만 닫음
-          if (sheetOrigin !== 'fcard') { close(); return; }
-          var qText = (qEl.querySelector('.bs-query-text') || {}).textContent;
-          if (!qText) return;
-          qText = qText.trim();
-          if (addedQueries.has(qText)) { close(); return; }   // 중복 무시 (시트는 닫음)
-          var data = QUERY_CARDS[qText];
-          if (!data || !feedRoot || !target) { close(); return; }
-          addedQueries.add(qText);
-
-          // 1) 시트 닫기 시작 (기존 close 모션 사용)
           close();
-
-          // 2) 스켈레톤 카드 생성 → origin 카드 바로 앞에 collapsed 상태로 삽입
-          //    .fcard--dynamic 클래스 부여 → 칩 전환 시 식별/제거 가능
-          var card = document.createElement('article');
-          card.className = 'fcard fcard--b fcard--dynamic fcard--skeleton is-entering is-collapsed';
-          card.setAttribute('data-query', qText);
-          card.innerHTML = buildSkeletonInner();
-          feedRoot.insertBefore(card, target);
-
-          // 3) double rAF 후 collapse 해제 → 슬롯 확장 + 스켈레톤 페이드인
-          requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-              card.classList.remove('is-collapsed');
-            });
-          });
-
-          // 4) 2500ms 후 스켈레톤 → 실제 콘텐츠로 swap (사용자 요청 러닝타임)
-          setTimeout(function () {
-            card.classList.add('is-content-swap');
-            card.style.opacity = '0';
-            setTimeout(function () {
-              card.innerHTML = buildRealInner(data);
-              card.classList.remove('fcard--skeleton');
-              card.style.opacity = '1';
-              // 전환 끝나면 cleanup
-              setTimeout(function () {
-                card.classList.remove('is-entering', 'is-content-swap');
-                card.style.opacity = '';
-              }, 260);
-            }, 220);
-          }, 2500);
         });
       });
+
+      // close() 시점에 호출되는 카드 재생성 함수 — origin 카드 바로 다음(아래)에 삽입
+      triggerRegen = function (pq) {
+        addedQueries.add(pq.qText);
+        var card = document.createElement('article');
+        card.className = 'fcard fcard--b fcard--dynamic fcard--skeleton is-entering is-collapsed';
+        card.setAttribute('data-query', pq.qText);
+        card.innerHTML = buildSkeletonInner();
+        // origin 카드의 "바로 다음(아래)" 위치에 삽입
+        feedRoot.insertBefore(card, target.nextSibling);
+        // double rAF 후 collapse 해제 → 슬롯 확장 + 스켈레톤 fade-in
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            card.classList.remove('is-collapsed');
+          });
+        });
+        // 2500ms 후 스켈레톤 → 실제 콘텐츠 swap
+        setTimeout(function () {
+          card.classList.add('is-content-swap');
+          card.style.opacity = '0';
+          setTimeout(function () {
+            card.innerHTML = buildRealInner(pq.data);
+            card.classList.remove('fcard--skeleton');
+            card.style.opacity = '1';
+            setTimeout(function () {
+              card.classList.remove('is-entering', 'is-content-swap');
+              card.style.opacity = '';
+            }, 260);
+          }, 220);
+        }, 2500);
+      };
 
       // 칩 전환 시 동적 카드 리셋용 (chip 라우터에서 호출)
       window.__resetDynamicFcards = function () {

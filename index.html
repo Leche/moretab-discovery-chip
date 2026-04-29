@@ -4496,15 +4496,34 @@
       var openCloseTimer = null;
       var DURATION = 320; // CSS transition(0.32s)과 동기
 
+      // 헤더 reveal — rAF polling 방식 (open 중에만 매 프레임 scrollTop 직접 읽기)
+      // iOS Safari/PWA에서 scroll 이벤트나 IntersectionObserver가 momentum 직후 안정적으로
+      // 발화되지 않는 케이스가 있어, polling으로 동기화 보장 (close 시 자동 정지)
+      var pollRafId = null;
+      function pollScrollState() {
+        if (!detail.classList.contains('is-open')) {
+          pollRafId = null;
+          return;
+        }
+        var scrolled = detailBody.scrollTop > 0;
+        if (scrolled !== detail.classList.contains('is-scrolled')) {
+          detail.classList.toggle('is-scrolled', scrolled);
+        }
+        pollRafId = requestAnimationFrame(pollScrollState);
+      }
+
       function openDetail() {
         if (openCloseTimer) { clearTimeout(openCloseTimer); openCloseTimer = null; }
         detailBody.scrollTop = 0;
+        detail.classList.remove('is-scrolled');   // 진입 시 항상 최상단 상태로 초기화
         detail.hidden = false;
         detail.setAttribute('aria-hidden', 'false');
         openSuppressUntil = Date.now() + 350;
         requestAnimationFrame(function () {
           requestAnimationFrame(function () {
             detail.classList.add('is-open');
+            // is-open이 붙은 직후 polling 시작
+            if (pollRafId == null) pollRafId = requestAnimationFrame(pollScrollState);
           });
         });
         document.body.style.overflow = 'hidden';
@@ -4512,10 +4531,13 @@
       function closeDetail() {
         if (!detail.classList.contains('is-open') && detail.hidden) return;
         detail.classList.remove('is-open');
+        // polling 즉시 정지
+        if (pollRafId != null) { cancelAnimationFrame(pollRafId); pollRafId = null; }
         openCloseTimer = setTimeout(function () {
           detail.hidden = true;
           detail.setAttribute('aria-hidden', 'true');
           detailBody.scrollTop = 0;
+          detail.classList.remove('is-scrolled');  // 명시적 reset
           document.body.style.overflow = '';
           openCloseTimer = null;
         }, DURATION);
@@ -4631,11 +4653,8 @@
         }, { searchArea: feedArea });
       }
 
-      // 3) db-detail 풀페이지 — db-detail__body 스크롤
-      //    - 검색바(.bs-search-area) 축소 모션은 attachScrollUI로 처리
-      //    - 헤더 타이틀 + divider reveal은 IntersectionObserver로 분리
-      //      (iOS PWA에서 momentum 끝난 뒤 scroll 이벤트가 안정적으로 발화되지 않거나
-      //       scrollTop이 fractional 잔존 → IO로 "최상단 sentinel 가시 여부" 직접 추적)
+      // 3) db-detail 풀페이지 — 검색바 축소만 처리. is-scrolled 토글은 openDetail/closeDetail의
+      //    rAF polling이 단일 source of truth (iOS Safari/PWA에서 가장 신뢰 가능)
       var detailBody = document.getElementById('dbDetailBody');
       var detailEl = document.getElementById('dbDetail');
       var detailArea = detailEl ? detailEl.querySelector('.bs-search-area') : null;
@@ -4643,23 +4662,6 @@
         attachScrollUI(detailBody, function () { return detailBody.scrollTop; }, {
           searchArea: detailArea
         });
-
-        if ('IntersectionObserver' in window) {
-          // 최상단 sentinel — body의 첫 자식으로 삽입
-          var sentinel = document.createElement('div');
-          sentinel.setAttribute('aria-hidden', 'true');
-          sentinel.style.cssText = 'height:1px;flex:0 0 1px;pointer-events:none;';
-          detailBody.insertBefore(sentinel, detailBody.firstChild);
-
-          var io = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-              // sentinel이 보이면 = 최상단 → is-scrolled 제거
-              // sentinel이 안 보이면 = 스크롤됨 → is-scrolled 추가
-              detailEl.classList.toggle('is-scrolled', !entry.isIntersecting);
-            });
-          }, { root: detailBody, threshold: 0 });
-          io.observe(sentinel);
-        }
       }
     })();
   </script>

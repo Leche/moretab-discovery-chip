@@ -4632,16 +4632,34 @@
       }
 
       // 3) db-detail 풀페이지 — db-detail__body 스크롤
-      //    - 검색바(.bs-search-area) 동일한 축소 모션
-      //    - 헤더 타이틀 + divider는 스크롤 시작 직후 노출, 최상단 복귀 시 숨김
+      //    - 검색바(.bs-search-area) 축소 모션은 attachScrollUI로 처리
+      //    - 헤더 타이틀 + divider reveal은 IntersectionObserver로 분리
+      //      (iOS PWA에서 momentum 끝난 뒤 scroll 이벤트가 안정적으로 발화되지 않거나
+      //       scrollTop이 fractional 잔존 → IO로 "최상단 sentinel 가시 여부" 직접 추적)
       var detailBody = document.getElementById('dbDetailBody');
       var detailEl = document.getElementById('dbDetail');
       var detailArea = detailEl ? detailEl.querySelector('.bs-search-area') : null;
       if (detailBody && detailEl) {
         attachScrollUI(detailBody, function () { return detailBody.scrollTop; }, {
-          searchArea: detailArea,
-          detailEl: detailEl
+          searchArea: detailArea
         });
+
+        if ('IntersectionObserver' in window) {
+          // 최상단 sentinel — body의 첫 자식으로 삽입
+          var sentinel = document.createElement('div');
+          sentinel.setAttribute('aria-hidden', 'true');
+          sentinel.style.cssText = 'height:1px;flex:0 0 1px;pointer-events:none;';
+          detailBody.insertBefore(sentinel, detailBody.firstChild);
+
+          var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              // sentinel이 보이면 = 최상단 → is-scrolled 제거
+              // sentinel이 안 보이면 = 스크롤됨 → is-scrolled 추가
+              detailEl.classList.toggle('is-scrolled', !entry.isIntersecting);
+            });
+          }, { root: detailBody, threshold: 0 });
+          io.observe(sentinel);
+        }
       }
     })();
   </script>

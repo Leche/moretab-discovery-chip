@@ -1694,24 +1694,22 @@
   .db-detail.is-open { transform: translateY(0); }
 
   /* 2뎁스 헤더 — KakaoTalk Design System v3.0 "Flat Navigation" 적용 (Figma 998:4695)
-     - 좌: Back 아이콘 (left 16, 24x24)
-     - 중앙: 타이틀 (Pretendard Bold 17, #191919, 한 줄 말줄임)
-     - 우: Search 아이콘 (right 16, 24x24)
-     - 높이 56 + safe-top, 배경 white */
+     - 좌: Back 아이콘, 중앙: 타이틀, 우: Search 아이콘
+     - 헤더 전체 높이 = safe-top + 56(nav row). 세 요소 모두 bottom:0, height:56로 동일 row에 정렬.
+       (top + transform 조합 회피 → PWA standalone에서 safe-area 큰 값에도 안전) */
   .db-detail__header {
-    flex: 0 0 56px;
+    flex: 0 0 auto;
+    height: calc(56px + env(safe-area-inset-top, 0px));
     background: #ffffff;
     position: relative;
-    padding-top: env(safe-area-inset-top, 0px);
-    height: calc(56px + env(safe-area-inset-top, 0px));
   }
   .db-detail__back,
   .db-detail__search {
     position: absolute;
-    top: env(safe-area-inset-top, 0px);
+    bottom: 0;
     height: 56px;
     width: 44px;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     background: none;
@@ -1730,23 +1728,24 @@
     display: block;
   }
   .db-detail__title {
-    /* Flat/Title 2depth: 중앙 절대 배치, h-44 + px-20, 한 줄 말줄임, 좌우 고정 마진 20+44 (시스템 패딩 + back/search 영역) */
+    /* Flat/Title 2depth: 좌/우 56(= back/search 영역) 마진 안에서 중앙 정렬, 한 줄 말줄임
+       line-height: 56px로 단일줄 텍스트 vertical center + ellipsis 안정 동작 */
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, calc(-50% + env(safe-area-inset-top, 0px) / 2));
-    max-width: calc(100% - 128px);
+    bottom: 0;
+    left: 56px;
+    right: 56px;
+    height: 56px;
     margin: 0;
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-weight: 700;
-    font-size: 17px;
-    line-height: 1.2;
-    color: #191919;
-    letter-spacing: 0;
+    line-height: 56px;
+    text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    text-align: center;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: #191919;
+    letter-spacing: 0;
   }
   .db-detail__divider {
     height: 0.5px;

@@ -72,6 +72,18 @@
     justify-content: center;
     padding-bottom: 49px; /* tab-bar 높이 — 콘텐츠가 고정 탭바 아래로 가지 않도록 */
   }
+  /* 발견A/발견B는 floating search bar(52 + 20 gap + 16 buffer ≈ 88)가 추가로 자리하므로
+     본문이 검색바에 가려지지 않게 padding-bottom 확보 (= tab-bar 49 + 88 = 137) */
+  body.feed-active, body.discovery-b-active { padding-bottom: 137px; }
+  html[data-standalone="true"] body.feed-active,
+  html[data-standalone="true"] body.discovery-b-active {
+    padding-bottom: calc(137px + env(safe-area-inset-bottom, 0px));
+  }
+  @media all and (display-mode: standalone) {
+    body.feed-active, body.discovery-b-active {
+      padding-bottom: calc(137px + env(safe-area-inset-bottom, 0px));
+    }
+  }
 
   /* Status bar 마스크 — black-translucent 메타로 페이지가 status bar 영역까지 비치는 걸
      항상 흰색으로 가려서 평소엔 default 모드처럼 보이게 함.
@@ -229,7 +241,13 @@
     align-items: flex-start;
     gap: 6px;
     background: #ffffff;
+    /* 칩 5개 이상 — 좁은 디바이스에서 오버플로 시 가로 스크롤 (스크롤바는 숨김) */
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* IE/Edge legacy */
   }
+  .chip-bar::-webkit-scrollbar { display: none; }  /* WebKit/Blink */
   /* A. Tab / 01. XLarge (Figma: 1321:3717) — h-38, px-16 py-10, gap-4, rounded-40
      border 두께(1px)는 active/inactive 공통으로 유지하여 box-model 폭이 변하지 않도록 함.
      inactive는 실선(rgba 0,0,0,0.14), active는 배경과 같은 색으로 "보이지 않는 1px" 처리.
@@ -793,7 +811,8 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 100;
+    /* bs-overlay(z 1000)보다 위 — bottom sheet가 tab-bar "뒤에서" 올라오고 dim도 tab-bar는 안 가림 */
+    z-index: 1010;
   }
   .tab-bar .tabs {
     height: 49px;
@@ -1213,8 +1232,8 @@
      ===================================================================== */
   .bs-overlay {
     position: fixed;
-    inset: 0;
-    z-index: 1000;
+    inset: 0;            /* full screen — 시트가 tab-bar 뒤에서 올라오도록 sheet도 viewport 끝까지 차지 */
+    z-index: 1000;       /* tab-bar(z 1010)보다 아래 — 그래서 dim/sheet가 tab-bar 뒤에 위치 */
     background: rgba(0, 0, 0, 0);
     display: flex;
     justify-content: center;
@@ -1229,7 +1248,8 @@
   }
   .bs-sheet {
     width: 100%;
-    /* 메인탭(56) 바로 아래까지 올라오도록 — 칩바 영역은 시트가 덮음 */
+    /* sheet는 메인탭(56) 아래 ~ viewport 끝까지 점유. 단, 하단 (49 + safe-bottom)는 tab-bar에 가려짐.
+       → 슬라이드업 모션이 tab-bar "뒤에서" 올라오는 것처럼 보이고, 스프링 오버슈트도 tab-bar에 마스킹돼 갭 안 보임. */
     height: calc(100vh - 56px - env(safe-area-inset-top, 0px));
     max-height: calc(100vh - 56px - env(safe-area-inset-top, 0px));
     background: #ffffff;
@@ -1238,7 +1258,8 @@
     display: flex;
     flex-direction: column;
     transform: translateY(100%);
-    transition: transform 0.42s cubic-bezier(0.34, 1.18, 0.5, 1);  /* iOS-like spring tension */
+    /* iOS-like spring — overshoot 살짝 줄여 49px tab-bar 마스킹 안에 안전히 들어가게 (세로 긴 기기에서도 갭 안 노출) */
+    transition: transform 0.42s cubic-bezier(0.34, 1.10, 0.5, 1);
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
     color: #191919;
     touch-action: none;  /* drag handler를 위한 기본 터치 동작 비활성 */
@@ -1273,6 +1294,9 @@
     flex: 1 1 auto;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    /* 끝까지 스크롤했을 때 마지막 컨텐츠가 bs-search-bg(49+safe ~ 207+safe) 그라데이션·블러 영역에
+       가려지지 않도록 충분한 하단 padding 확보 (gradient top 207 + 약간의 여유 + safe-bottom) */
+    padding-bottom: calc(220px + env(safe-area-inset-bottom, 0px));
   }
 
   /* navi: title + sum + divider */
@@ -1505,7 +1529,8 @@
   .bs-search-bg {
     position: absolute;
     left: 0; right: 0;
-    bottom: 0;
+    /* tab-bar(49 + safe-bottom) 위에 얹히도록 그만큼 띄움 — 뒷면 그라데이션이 visible 영역에서 끊기게 */
+    bottom: calc(49px + env(safe-area-inset-bottom, 0px));
     height: 158px;
     z-index: 1;
     pointer-events: none;
@@ -1552,7 +1577,8 @@
   .bs-search {
     position: absolute;
     left: 0; right: 0;
-    bottom: 42px;
+    /* tab-bar(49 + safe-bottom) 위로 정확히 20px 간격이 되도록 */
+    bottom: calc(69px + env(safe-area-inset-bottom, 0px));
     z-index: 2;
     pointer-events: none;       /* 갭 영역은 스크롤 통과 */
     display: flex;
@@ -1567,7 +1593,27 @@
     gap: 12px;
     /* drop-shadow는 자식의 backdrop-filter를 격리시키므로 사용 금지 — 각 자식 box-shadow로 분산 */
     pointer-events: auto;
+    /* 스크롤 단축 모션 — 컨텐츠가 위로 스크롤되면 가로 center · 세로 bottom 기준으로 축소.
+       즉 축소 시 바의 하단은 그대로 정착, 상단만 아래로 내려와 작아지는 느낌 */
+    transform-origin: center bottom;
+    transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
   }
+  .bs-search-area.is-compact { transform: scale(0.7); }
+
+  /* 가이드(placeholder) 상태 input — 피드 floating search bar에서 사용 */
+  .bs-search-input--guide .bs-search-input__text { color: #767676; }
+
+  /* =====================================================================
+     Feed-level floating search bar — 발견A/발견B 활성 시 GNB 위 fixed
+     - bs-search-bg / bs-search 와 동일 비주얼, 단 position: fixed (viewport 기준)
+     - z-index 100~101 (tab-bar 1010 아래, 피드 콘텐츠 위)
+     ===================================================================== */
+  .bs-search-bg--fixed { position: fixed; z-index: 100; display: none; }
+  .bs-search--fixed    { position: fixed; z-index: 101; display: none; }
+  body.feed-active .bs-search-bg--fixed,
+  body.discovery-b-active .bs-search-bg--fixed { display: block; }
+  body.feed-active .bs-search--fixed,
+  body.discovery-b-active .bs-search--fixed { display: flex; }
   .bs-search-input {
     flex: 1 1 auto; min-width: 0;
     height: 52px;
@@ -1620,35 +1666,163 @@
   /* .bs-sheet width-cap removed — 디바이스 너비 그대로 */
 
   /* =====================================================================
+     ===== DB-DETAIL: 2뎁스 풀페이지 (발견B 카드 클릭 시) ===================
+     - bs-sheet와 동일한 본문 컨텐츠를 사용하되, GNB(tab-bar) 위에서 풀스크린 점유
+     - 상단: 56px 헤더 (back 버튼 + 타이틀)
+     - 하단: tab-bar(49 + safe-bottom) 만큼 비워둠 (= GNB 유지)
+     - 진입 애니메이션: 우→좌 슬라이드인 (220ms)
+     - z-index: 500 (tab-bar는 z 1010이라 풀페이지 위에 항상 노출 = GNB 유지)
+     ===================================================================== */
+  .db-detail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: calc(49px + env(safe-area-inset-bottom, 0px));
+    z-index: 500;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    /* 진입: 아래 → 위 슬라이드인 (bs-sheet과 다른 transition timing으로 풀페이지 느낌 강조) */
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #191919;
+    will-change: transform;
+  }
+  .db-detail[hidden] { display: none; }
+  .db-detail.is-open { transform: translateY(0); }
+
+  /* 2뎁스 헤더 — KakaoTalk Design System v3.0 "Flat Navigation" 적용 (Figma 998:4695)
+     - 좌: Back 아이콘 (left 16, 24x24)
+     - 중앙: 타이틀 (Pretendard Bold 17, #191919, 한 줄 말줄임)
+     - 우: Search 아이콘 (right 16, 24x24)
+     - 높이 56 + safe-top, 배경 white */
+  .db-detail__header {
+    flex: 0 0 56px;
+    background: #ffffff;
+    position: relative;
+    padding-top: env(safe-area-inset-top, 0px);
+    height: calc(56px + env(safe-area-inset-top, 0px));
+  }
+  .db-detail__back,
+  .db-detail__search {
+    position: absolute;
+    top: env(safe-area-inset-top, 0px);
+    height: 56px;
+    width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    color: #191919;
+  }
+  .db-detail__back  { left: 8px; }
+  .db-detail__search { right: 8px; }
+  .db-detail__back svg,
+  .db-detail__search svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+  }
+  .db-detail__title {
+    /* Flat/Title 2depth: 중앙 절대 배치, h-44 + px-20, 한 줄 말줄임, 좌우 고정 마진 20+44 (시스템 패딩 + back/search 영역) */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, calc(-50% + env(safe-area-inset-top, 0px) / 2));
+    max-width: calc(100% - 128px);
+    margin: 0;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    line-height: 1.2;
+    color: #191919;
+    letter-spacing: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+  }
+  .db-detail__divider {
+    height: 0.5px;
+    background: rgba(0, 0, 0, 0.12);
+    flex: 0 0 0.5px;
+  }
+
+  /* 본문 스크롤 영역 — bs-scroll과 동일한 스타일.
+     풀페이지에도 floating search bar(.db-detail__searchbar)가 있으므로 bs-scroll과 동일하게 220px 확보 */
+  .db-detail__body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 220px;
+  }
+
+  /* 풀페이지 floating search bar — db-detail 컨테이너 기준 absolute
+     bs-search-bg/bs-search 비주얼 그대로, outer 위치만 db-detail에 맞춰 override
+     ※ 클래스명: __searchbar / __searchbar-bg — 헤더 우측 search 아이콘(.db-detail__search)과 충돌 회피 */
+  .db-detail__searchbar-bg {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+  }
+  .db-detail__searchbar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 20px;          /* db-detail 바닥(= tab-bar top) 위 20px */
+    z-index: 2;
+  }
+
+  /* 헤더 reveal — 스크롤 시작 전 타이틀+divider 숨김, 스크롤 시작 시 노출 */
+  .db-detail__title { opacity: 0; transition: opacity 0.18s ease; }
+  .db-detail__divider { opacity: 0; transition: opacity 0.18s ease; }
+  .db-detail.is-scrolled .db-detail__title,
+  .db-detail.is-scrolled .db-detail__divider { opacity: 1; }
+
+  /* =====================================================================
      ===== SCREEN: HOME (홈 칩 선택 시) ===================================
      Figma 3982:180303 기준. 컨테이너 padding은 main.feed의 16px 좌우 적용.
      섹션간 gap 10px. 배경은 bg-gradient(#f5f5f5)를 그대로 사용.
      ===================================================================== */
   .screen-wallet { display: none; padding-top: 6px; }
   body.wallet-active .bg-gradient { display: none; }
-  body.discovery-b-active .bg-gradient { display: none; }
+  /* 발견B는 발견A 클론이라 gradient 배경 유지 — 별도 hide 규칙 없음 */
+  /* 발견C(옛 발견B 백업)는 card-news 디자인이라 gradient 숨김 */
+  body.discovery-c-active .bg-gradient { display: none; }
   .screen-wallet.is-active { display: block; }
   .wallet-screenshot { width: 100%; }
   .wallet-screenshot img { width: 100%; display: block; }
 
   /* =====================================================================
-     SCREEN: DISCOVERY-B (발견B 칩 선택 시) — Figma 1321:4039 기반
-     feed_01 카드 피드: 큰 썸네일(252px) + 제목 + 본문 + 소스·액션 행
+     SCREEN: DISCOVERY-B (발견B 칩 선택 시)
+     발견A의 .screen-feed 콘텐츠를 JS로 클론 — 레이아웃은 발견A와 동일
+     카드 클릭 → bs-sheet 대신 2뎁스 풀페이지(.db-detail)로 진입 (비교용)
      ===================================================================== */
+  .screen-discovery-b { display: none; padding: 6px 16px 0; }
+  .screen-discovery-b.is-active { display: flex; flex-direction: column; gap: 12px; }
+
   /* =====================================================================
-     ===== DISCOVERY-B feed (Figma 1458:2881) ============================
-     - .screen-discovery-b: padding [6 16 20 16], gap 24
+     ===== DISCOVERY-C feed (옛 발견B 백업) ============================
+     - .screen-discovery-c (이전 .screen-discovery-b): padding [6 16 20 16], gap 24
      - .dbcard  : feed_01 (썸네일+제목+본문+푸터, 11개)
      - .dbnews  : card_news_01 (361×361, 4개) — 이미지 위 dim 16% + 흰 텍스트
      - .dbshorts: shorts_01 (361×531, 3개) — 이미지 위 dim 48% + 흰 텍스트
      ===================================================================== */
-  .screen-discovery-b { display: none; padding: 6px 16px 20px; }
-  .screen-discovery-b.is-active { display: flex; flex-direction: column; gap: 24px; align-items: center; }
+  .screen-discovery-c { display: none; padding: 6px 16px 20px; }
+  .screen-discovery-c.is-active { display: flex; flex-direction: column; gap: 24px; align-items: center; }
 
   /* feed_01 카드 — 썸네일 + 제목 + 본문 + 푸터
      thumb→body 12px, body 내부 4px, body→foot 0 (사용자 요구) */
   .dbcard {
-    /* width-cap removed — fill screen-discovery-b padding 안 영역 */
+    /* width-cap removed — fill screen-discovery-c padding 안 영역 */
     display: flex; flex-direction: column;
     gap: 0;
     width: 100%;
@@ -1684,9 +1858,9 @@
   }
 
   /* card_news_01 / shorts_01은 기존 .card-news 컴포넌트 재사용
-     아래는 발견B용 variant (shorts: 361/531 + dim 강함 + 큰 desc clamp)
-     발견B 안의 .card-news는 .screen-discovery-b padding과의 이중 inset 방지를 위해 margin 0으로 override */
-  .screen-discovery-b .card-news {
+     아래는 발견C용 variant (shorts: 361/531 + dim 강함 + 큰 desc clamp)
+     발견C 안의 .card-news는 .screen-discovery-c padding과의 이중 inset 방지를 위해 margin 0으로 override */
+  .screen-discovery-c .card-news {
     margin: 0;
     width: 100%;
   }
@@ -1701,16 +1875,16 @@
   }
   .card-news--shorts .cn-desc { -webkit-line-clamp: 1; }
 
-  /* 발견B 카드뉴스(news) 본문은 2줄 클램프 + dbcard__desc와 자간/행간 통일 */
-  .screen-discovery-b .card-news:not(.card-news--shorts) .cn-desc {
+  /* 발견C 카드뉴스(news) 본문은 2줄 클램프 + dbcard__desc와 자간/행간 통일 */
+  .screen-discovery-c .card-news:not(.card-news--shorts) .cn-desc {
     -webkit-line-clamp: 2;
   }
-  .screen-discovery-b .card-news .cn-desc {
+  .screen-discovery-c .card-news .cn-desc {
     line-height: 1.52;
     letter-spacing: 0;
   }
   /* cn-desc ↔ cn-meta 사이 gap 제거 (사용자 요청) */
-  .screen-discovery-b .card-news > .cn-content {
+  .screen-discovery-c .card-news > .cn-content {
     gap: 0;
   }
 
@@ -1722,7 +1896,7 @@
   }
   .cn-act {
     display: inline-flex; align-items: center;
-    height: 44px;        /* dbcard__foot과 동일하게 통일 */
+    height: 44px;
     padding: 0 0 0 8px;
     background: none; border: 0;
     color: #fff;
@@ -1736,8 +1910,7 @@
     color: #fff;
     display: block;
   }
-  /* 발견B의 cn-meta는 dbcard__foot과 동일한 44px */
-  .screen-discovery-b .card-news .cn-meta {
+  .screen-discovery-c .card-news .cn-meta {
     height: 44px;
   }
 
@@ -2335,7 +2508,13 @@
         <div class="chip"><span class="chip-txt">홈</span></div>
         <div class="chip"><span class="chip-txt">지갑</span></div>
         <div class="chip active"><span class="chip-txt">발견A</span></div>
+        <!-- 발견B 칩 — 발견A와 동일한 피드 + 카드 클릭 시 2뎁스 풀페이지로 진입 (비교용) -->
         <div class="chip"><span class="chip-txt">발견B</span></div>
+        <!-- 발견C 칩 — 옛 발견B(card-news/dbcard/dbshorts 디자인) 백업
+             현재 hide 처리. 복구하려면 style="display:none" 제거 + 아래 활성화 안내 참조:
+             - SCREEN_BY_LABEL 매핑은 이미 '발견C': 'discovery-c'로 유지 중
+             - chip 사이클 순서에 'discovery-c' 추가 필요 (현재 제외됨) -->
+        <div class="chip" style="display:none"><span class="chip-txt">발견C</span></div>
       </div>
     </header>
 
@@ -2716,10 +2895,20 @@
       <!-- /screen-wallet -->
 
       <!-- ===================================================================
-           SCREEN: DISCOVERY-B (발견B 칩 선택 시) — Figma 1321:4039 기반
+           SCREEN: DISCOVERY-B (발견B 칩 선택 시)
+           발견A의 .screen-feed 콘텐츠를 JS로 클론하여 채움 (비교용 피드 복제)
+           카드 클릭 → bs-sheet 대신 2뎁스 풀페이지(.db-detail) 진입
+           =================================================================== -->
+      <section class="screen screen-discovery-b" data-screen="discovery-b" id="screenDiscoveryB">
+        <!-- JS가 런타임에 .screen-feed의 자식 노드를 복제해 채웁니다. -->
+      </section>
+      <!-- /screen-discovery-b -->
+
+      <!-- ===================================================================
+           SCREEN: DISCOVERY-C (발견C 칩 선택 시 — 옛 발견B 백업, card-news 디자인) — Figma 1321:4039 기반
            feed_01 카드 17개 피드
            =================================================================== -->
-      <section class="screen screen-discovery-b" data-screen="discovery-b">
+      <section class="screen screen-discovery-c" data-screen="discovery-c">
 
       <!-- ===================================================================
            발견B feed — Figma 1458:2881 기준, 18 visible cards in order
@@ -3046,7 +3235,8 @@
       </section>
 
       </section>
-      <!-- /screen-discovery-b -->
+      <!-- /screen-discovery-c -->
+
 
       <!-- ===================================================================
            SCREEN: HOME (홈 칩 선택 시) — Figma 3982:180303 기반
@@ -3194,7 +3384,7 @@
               <span class="bs-query-text">노티드 우베 할인 프로모션</span>
               <img class="bs-query-arrow" src="images/discover_a/bs-query-arrow.svg" alt="" aria-hidden="true">
             </a>
-            <div class="bs-space" style="height:136px"></div>
+            <!-- 하단 여백은 .bs-scroll의 padding-bottom으로 처리 (search bar 그라데이션 회피) -->
           </div>
 
         </div>
@@ -3227,6 +3417,86 @@
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         DB-DETAIL: 2뎁스 풀페이지 (발견B 카드 클릭 시)
+         - bs-sheet과 동일한 컨텐츠 (노티드 우베 디저트 상세) + 상단 back 헤더
+         - GNB(tab-bar)는 그대로 유지 — page는 그 위에서만 채움
+         - 본문은 JS가 bs-sheet의 .bs-scroll 자식들을 클론해 채움
+         =================================================================== -->
+    <aside class="db-detail" id="dbDetail" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="노티드 우베 디저트 상세">
+      <header class="db-detail__header">
+        <button type="button" class="db-detail__back" id="dbDetailBack" aria-label="뒤로">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15.5 19.5L8 12l7.5-7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <h1 class="db-detail__title">노티드 우베 디저트</h1>
+        <button type="button" class="db-detail__search" aria-label="검색">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="10.75" cy="10.75" r="6.5" fill="none" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </header>
+      <div class="db-detail__divider"></div>
+      <div class="db-detail__body" id="dbDetailBody">
+        <!-- JS가 bs-sheet의 .bs-scroll 컨텐츠를 클론해 삽입 -->
+      </div>
+      <!-- 풀페이지 floating search bar — bs-sheet/피드와 동일한 visual + 동일한 축소 모션
+           클래스: __searchbar / __searchbar-bg (헤더 우측 .db-detail__search 아이콘과 충돌 회피) -->
+      <div class="bs-search-bg db-detail__searchbar-bg" aria-hidden="true">
+        <div class="bs-blur"></div>
+        <div class="bs-blur"></div>
+        <div class="bs-blur"></div>
+        <div class="bs-blur"></div>
+        <div class="bs-blur"></div>
+        <div class="bs-blur"></div>
+        <div class="bs-blur"></div>
+        <div class="bs-blur"></div>
+        <div class="bs-blur"></div>
+        <div class="bs-blur"></div>
+        <div class="bs-grad"></div>
+      </div>
+      <div class="bs-search db-detail__searchbar">
+        <div class="bs-search-area">
+          <div class="bs-search-input">
+            <img class="bs-search-input__logo" src="images/discover_a/bs-sb-kanana-logo.svg" alt="" aria-hidden="true">
+            <span class="bs-search-input__text">노티드 우베 디저트</span>
+          </div>
+          <button type="button" class="bs-search-close" id="dbDetailSearchClose" aria-label="닫기">
+            <img class="bs-search-close__x" src="images/discover_a/bs-sb-close-x.svg" alt="" aria-hidden="true">
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===================================================================
+         FEED FLOATING SEARCH BAR — 발견A/발견B 활성 시 GNB 위 floating
+         "카나나에게 물어보세요" 가이드 텍스트 (#767676)
+         스크롤에 따라 center 방향으로 단축/복귀 모션 (.is-compact)
+         =================================================================== -->
+    <div class="bs-search-bg bs-search-bg--fixed" aria-hidden="true">
+      <div class="bs-blur"></div>
+      <div class="bs-blur"></div>
+      <div class="bs-blur"></div>
+      <div class="bs-blur"></div>
+      <div class="bs-blur"></div>
+      <div class="bs-blur"></div>
+      <div class="bs-blur"></div>
+      <div class="bs-blur"></div>
+      <div class="bs-blur"></div>
+      <div class="bs-blur"></div>
+      <div class="bs-grad"></div>
+    </div>
+    <div class="bs-search bs-search--fixed">
+      <div class="bs-search-area" id="feedSearchArea">
+        <div class="bs-search-input bs-search-input--guide">
+          <img class="bs-search-input__logo" src="images/discover_a/bs-sb-kanana-logo.svg" alt="" aria-hidden="true">
+          <span class="bs-search-input__text">카나나에게 물어보세요</span>
+        </div>
       </div>
     </div>
 
@@ -3656,7 +3926,7 @@
       if (!chips.length) return;
 
       // 칩 텍스트 → data-screen 매핑 (구현된 화면만)
-      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '발견A': 'feed', '발견B': 'discovery-b' };
+      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '발견A': 'feed', '발견B': 'discovery-b', '발견C': 'discovery-c' };
 
       chips.forEach(function (chip) {
         var label = (chip.textContent || '').trim();
@@ -3680,6 +3950,7 @@
         // 지갑칩 활성 시 bg-gradient 숨김
         document.body.classList.toggle('wallet-active', screenKey === 'wallet');
         document.body.classList.toggle('discovery-b-active', screenKey === 'discovery-b');
+        document.body.classList.toggle('discovery-c-active', screenKey === 'discovery-c');
         document.body.classList.toggle('feed-active', screenKey === 'feed');
         // 동적 카드(쿼리 클릭으로 추가된 fcard) 리셋 — 칩 전환마다 초기 상태로
         if (typeof window.__resetDynamicFcards === 'function') window.__resetDynamicFcards();
@@ -3726,6 +3997,7 @@
           var mt = window.MoreTab;
           if (!mt) return;
           var current = mt.getActiveScreen();
+          // 발견C는 현재 hide — 복구 시 'discovery-c' 다시 추가
           var order = ['home', 'wallet', 'feed', 'discovery-b'];
           var idx = order.indexOf(current);
           var next = order[(idx + 1) % order.length];
@@ -4173,6 +4445,199 @@
       handler.addEventListener('touchstart', onDown, { passive: false });
       window.addEventListener('touchmove', onMove, { passive: false });
       window.addEventListener('touchend', onUp);
+    })();
+
+    /* =========================================================================
+       발견B = 발견A 피드 클론 + 카드 클릭 시 2뎁스 풀페이지(.db-detail) 진입
+       - bs-sheet (발견A) ↔ 풀페이지 (발견B) 동선 비교용
+       - 풀페이지는 GNB(tab-bar)는 가리지 않고 그 위 영역만 점유
+       ======================================================================== */
+    (function () {
+      var srcScreen = document.querySelector('.screen-feed');
+      var dstScreen = document.getElementById('screenDiscoveryB');
+      var detail = document.getElementById('dbDetail');
+      var detailBody = document.getElementById('dbDetailBody');
+      var detailBack = document.getElementById('dbDetailBack');
+      if (!srcScreen || !dstScreen || !detail || !detailBody || !detailBack) return;
+
+      // 1) 발견A의 .screen-feed 자식 노드들을 발견B 컨테이너로 deep-clone
+      //    svg symbol defs는 ID 충돌 방지를 위해 제외 — <use href="#..">는 원본 ID로 매칭됨
+      Array.prototype.forEach.call(srcScreen.children, function (child) {
+        if (child.tagName && child.tagName.toLowerCase() === 'svg') return;
+        dstScreen.appendChild(child.cloneNode(true));
+      });
+
+      // 클론 후 발견B 안의 동적/스켈레톤 잔여물 제거 (있을 리는 없으나 안전 차원)
+      dstScreen.querySelectorAll('.fcard--dynamic').forEach(function (c) { c.remove(); });
+
+      // 2) bs-sheet의 본문 컨텐츠를 풀페이지 body로 deep-clone
+      //    .bs-scroll 안의 자식만 복제 (search bar는 풀페이지엔 불필요해서 제외)
+      var bsScroll = document.querySelector('#bsOverlay .bs-scroll');
+      if (bsScroll) {
+        Array.prototype.forEach.call(bsScroll.children, function (child) {
+          detailBody.appendChild(child.cloneNode(true));
+        });
+      }
+
+      // 3) 발견B의 "노티드 우베 디저트" 카드만 풀페이지 진입점으로 지정
+      //    (발견A와 parity: 발견A도 노티드 우베 디저트 카드만 bs-sheet 진입점)
+      var dbTrigger = null;
+      dstScreen.querySelectorAll('.fcard').forEach(function (c) {
+        var t = c.querySelector('.fcard__title');
+        if (t && t.textContent.trim() === '노티드 우베 디저트') dbTrigger = c;
+      });
+      if (dbTrigger) {
+        dbTrigger.style.cursor = 'pointer';
+        dbTrigger.setAttribute('tabindex', '0');
+        dbTrigger.setAttribute('role', 'button');
+      }
+
+      // 4) open/close 풀페이지
+      var openSuppressUntil = 0;
+      var openCloseTimer = null;
+      var DURATION = 320; // CSS transition(0.32s)과 동기
+
+      function openDetail() {
+        if (openCloseTimer) { clearTimeout(openCloseTimer); openCloseTimer = null; }
+        detailBody.scrollTop = 0;
+        detail.hidden = false;
+        detail.setAttribute('aria-hidden', 'false');
+        openSuppressUntil = Date.now() + 350;
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            detail.classList.add('is-open');
+          });
+        });
+        document.body.style.overflow = 'hidden';
+      }
+      function closeDetail() {
+        if (!detail.classList.contains('is-open') && detail.hidden) return;
+        detail.classList.remove('is-open');
+        openCloseTimer = setTimeout(function () {
+          detail.hidden = true;
+          detail.setAttribute('aria-hidden', 'true');
+          detailBody.scrollTop = 0;
+          document.body.style.overflow = '';
+          openCloseTimer = null;
+        }, DURATION);
+      }
+
+      if (dbTrigger) {
+        dbTrigger.addEventListener('click', function (e) {
+          if (e.target.closest('button')) return;
+          openDetail();
+        });
+        dbTrigger.addEventListener('keydown', function (e) {
+          if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) {
+            e.preventDefault();
+            openDetail();
+          }
+        });
+      }
+      detailBack.addEventListener('click', function () {
+        if (Date.now() < openSuppressUntil) return;
+        closeDetail();
+      });
+      // 풀페이지 하단 검색바의 X 버튼 — 풀페이지 닫기 (back 버튼과 동일)
+      var detailSearchClose = document.getElementById('dbDetailSearchClose');
+      if (detailSearchClose) {
+        detailSearchClose.addEventListener('click', function () {
+          if (Date.now() < openSuppressUntil) return;
+          closeDetail();
+        });
+      }
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && detail.classList.contains('is-open')) closeDetail();
+      });
+
+      // 5) 칩이나 더보기 탭 클릭으로 화면이 바뀔 때 풀페이지 자동 닫기
+      document.querySelectorAll('.chip-bar .chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          if (!detail.hidden) closeDetail();
+        });
+      });
+      var moreTab = document.querySelector('.tab.more');
+      if (moreTab) {
+        moreTab.addEventListener('click', function () {
+          if (!detail.hidden) closeDetail();
+        });
+      }
+    })();
+
+    /* =========================================================================
+       bs-search-area 스크롤 단축 모션 + db-detail 헤더 reveal
+       - 축소 트리거: 컨텐츠가 위로 스크롤(scrollTop 증가) → 즉시 center 방향 50% 축소
+       - 복귀 트리거: 반대로 스크롤(scrollTop 감소) → 즉시 원 사이즈 복귀
+         (top까지 갈 필요 없이 방향 전환 직후 복귀)
+       - 최상단(scrollTop ~ 0)에서는 항상 원 사이즈
+       - 적용: 1) bs-sheet 내부 (.bs-scroll), 2) 피드 floating(window),
+              3) db-detail 풀페이지 (.db-detail__body)
+       - db-detail 헤더 타이틀+divider는 scrollTop > 0 일 때만 노출
+       - rAF 스로틀로 성능 보호
+       ======================================================================== */
+    (function () {
+      var TOP_DEADZONE = 4;      // 이 값 이하면 항상 원 사이즈
+      var DIR_DELTA = 1;         // 방향 인지 최소 픽셀 (작은 떨림 방지)
+
+      function attachScrollUI(scrollSource, getScrollTop, opts) {
+        // opts.searchArea: 축소 토글 대상 (.bs-search-area)
+        // opts.detailEl:   reveal 토글 대상 (.db-detail) — title/divider 노출용
+        var lastY = getScrollTop();
+        var ticking = false;
+
+        function update() {
+          ticking = false;
+          var y = getScrollTop();
+
+          if (opts.searchArea) {
+            if (y <= TOP_DEADZONE) {
+              opts.searchArea.classList.remove('is-compact');
+            } else if (y > lastY + DIR_DELTA) {
+              opts.searchArea.classList.add('is-compact');
+            } else if (y < lastY - DIR_DELTA) {
+              opts.searchArea.classList.remove('is-compact');
+            }
+          }
+
+          if (opts.detailEl) {
+            opts.detailEl.classList.toggle('is-scrolled', y > 0);
+          }
+
+          lastY = y;
+        }
+
+        scrollSource.addEventListener('scroll', function () {
+          if (!ticking) { ticking = true; requestAnimationFrame(update); }
+        }, { passive: true });
+      }
+
+      // 1) bs-sheet 내부 search bar — bs-scroll
+      var bsScroll = document.querySelector('#bsOverlay .bs-scroll');
+      var bsArea = document.querySelector('#bsOverlay .bs-search-area');
+      if (bsScroll && bsArea) {
+        attachScrollUI(bsScroll, function () { return bsScroll.scrollTop; }, { searchArea: bsArea });
+      }
+
+      // 2) 피드 floating search bar — window
+      var feedArea = document.getElementById('feedSearchArea');
+      if (feedArea) {
+        attachScrollUI(window, function () {
+          return window.scrollY || window.pageYOffset || 0;
+        }, { searchArea: feedArea });
+      }
+
+      // 3) db-detail 풀페이지 — db-detail__body 스크롤
+      //    - 검색바(.bs-search-area) 동일한 축소 모션
+      //    - 헤더 타이틀 + divider는 스크롤 시작 직후 노출, 최상단 복귀 시 숨김
+      var detailBody = document.getElementById('dbDetailBody');
+      var detailEl = document.getElementById('dbDetail');
+      var detailArea = detailEl ? detailEl.querySelector('.bs-search-area') : null;
+      if (detailBody && detailEl) {
+        attachScrollUI(detailBody, function () { return detailBody.scrollTop; }, {
+          searchArea: detailArea,
+          detailEl: detailEl
+        });
+      }
     })();
   </script>
 </body>

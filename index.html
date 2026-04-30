@@ -72,16 +72,17 @@
     justify-content: center;
     padding-bottom: 49px; /* tab-bar 높이 — 콘텐츠가 고정 탭바 아래로 가지 않도록 */
   }
-  /* 발견A/발견B는 floating search bar(52 + 20 gap + 16 buffer ≈ 88)가 추가로 자리하므로
-     본문이 검색바에 가려지지 않게 padding-bottom 확보 (= tab-bar 49 + 88 = 137) */
-  body.feed-active, body.discovery-b-active { padding-bottom: 137px; }
+  /* 발견A/발견B는 floating search bar(축소 시각 36 + 20 gap + 20 buffer ≈ 76)가 자리하므로
+     본문이 검색바에 가려지지 않게 padding-bottom 확보 (= tab-bar 49 + 76 = 125)
+     이 값은 푸터 마지막 텍스트 → 컴팩트 검색바 top 간격을 30px(= 카드 → 푸터 첫 텍스트 간격)로 맞춤 */
+  body.feed-active, body.discovery-b-active { padding-bottom: 125px; }
   html[data-standalone="true"] body.feed-active,
   html[data-standalone="true"] body.discovery-b-active {
-    padding-bottom: calc(137px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(125px + env(safe-area-inset-bottom, 0px));
   }
   @media all and (display-mode: standalone) {
     body.feed-active, body.discovery-b-active {
-      padding-bottom: calc(137px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: calc(125px + env(safe-area-inset-bottom, 0px));
     }
   }
 
@@ -139,17 +140,38 @@
     height: 222px;
     background: linear-gradient(to bottom, #f5f5f5 0%, #ffffff 100%);
   }
-  /* 발견A: bottom fade hide + device 자체 회색 → 끝까지 회색이 차도록 */
-  body.feed-active .bg-gradient::after { display: none; }
-  body.feed-active .device { background: #f5f5f5; }
+  /* bottom fade hide: 스크롤 최하단 흰 영역 방지 */
+  body.feed-active .bg-gradient::after,
+  body.discovery-b-active .bg-gradient::after { display: none; }
+  body.feed-active,
+  body.discovery-b-active { background: #f5f5f5; }
+  body.feed-active .device,
+  body.discovery-b-active .device { background: #f5f5f5; }
+  /* PWA elastic bounce 시 .top과 bg-gradient::before(white→gray fade) 사이 영역 채우기.
+     .feed::before는 device 안에 있어 bounce 때 device와 함께 아래로 밀림.
+     정상 스크롤: .feed::before가 device y=0~104px → 고정 헤더(viewport y=0~104px) 아래에 가려져 안 보임.
+     bounce X px: .feed::before가 viewport y=X~X+104px → 헤더(0~104) 아래로 노출되는
+     y=104~X+104 구간이 white로 채워짐 → 그 아래 페이드(white→gray)와 자연 연결. */
+  body.feed-active .feed::before,
+  body.discovery-b-active .feed::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 104px;
+    background: #ffffff;
+    z-index: -1;
+    pointer-events: none;
+  }
 
   /* ===== TOP =====
-     Sticky at top of viewport; hides on scroll down, shows on scroll up.
+     Fixed at top of viewport; hides on scroll down, shows on scroll up.
      Height: main-tab 56 + chip-bar 48 = 104px (+safe-top in PWA standalone for notch)
-     position:sticky로 flow 안에 자리 잡기 때문에 .feed의 padding-top 오프셋 불필요.
+     position:fixed → elastic bounce 시 헤더가 같이 튕기지 않음. .feed에 padding-top 104px 보정 필요.
      Reveal(→visible)는 빠르게 160ms, hide(→hidden)는 240ms로 약간 느리게(자연스러운 사라짐) */
   .top {
-    position: sticky;
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
@@ -296,7 +318,7 @@
   .feed {
     position: relative;
     z-index: 5;
-    padding: 0 0 20px; /* 마지막 요소 아래 시각적 여백 20px만 */
+    padding: 104px 0 20px; /* top: fixed .top 헤더(56+48) 오프셋, bottom: 시각적 여백 */
   }
 
   /* ===== Share row (info+share) — Figma 1321:3799 =====
@@ -853,9 +875,14 @@
      이중 분기: @media (display-mode: standalone) + html[data-standalone="true"] */
   @media all and (display-mode: standalone) {
     .top { padding-top: env(safe-area-inset-top, 0px); }
+    .feed { padding-top: calc(104px + env(safe-area-inset-top, 0px)); }
     .tab-bar { padding-bottom: env(safe-area-inset-bottom, 0px); }
     body {
       padding-bottom: calc(49px + env(safe-area-inset-bottom, 0px));
+    }
+    body.feed-active .feed::before,
+    body.discovery-b-active .feed::before {
+      height: calc(104px + env(safe-area-inset-top, 0px));
     }
     .bg-gradient {
       top: calc(104px + env(safe-area-inset-top, 0px));
@@ -863,6 +890,11 @@
     }
   }
   html[data-standalone="true"] .top { padding-top: env(safe-area-inset-top, 0px); }
+  html[data-standalone="true"] .feed { padding-top: calc(104px + env(safe-area-inset-top, 0px)); }
+  html[data-standalone="true"] body.feed-active .feed::before,
+  html[data-standalone="true"] body.discovery-b-active .feed::before {
+    height: calc(104px + env(safe-area-inset-top, 0px));
+  }
   html[data-standalone="true"] .tab-bar { padding-bottom: env(safe-area-inset-bottom, 0px); }
   html[data-standalone="true"] body {
     padding-bottom: calc(49px + env(safe-area-inset-bottom, 0px));
@@ -979,6 +1011,7 @@
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
+  .fcard--b { box-shadow: 0 0.5px 4px rgba(0,0,0,0.02), 0 0 0 1px #F5F5F5; }
   .fcard__inner { display: flex; flex-direction: column; gap: 6px; }       /* Figma 859:28473 itemSpacing=6 */
   .fcard__body { display: flex; flex-direction: column; gap: 4px; }         /* Figma 859:28475 itemSpacing=4 (B) */
   .fcard__group { display: flex; flex-direction: column; gap: 14px; }       /* Frame 2147239781 itemSpacing=14 */
@@ -1296,7 +1329,7 @@
     -webkit-overflow-scrolling: touch;
     /* 끝까지 스크롤했을 때 마지막 컨텐츠가 bs-search-bg(49+safe ~ 207+safe) 그라데이션·블러 영역에
        가려지지 않도록 충분한 하단 padding 확보 (gradient top 207 + 약간의 여유 + safe-bottom) */
-    padding-bottom: calc(220px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(145px + env(safe-area-inset-bottom, 0px));
   }
 
   /* navi: title + sum + divider */
@@ -1574,6 +1607,25 @@
       rgba(247,247,247,0.50) 100%
     );
   }
+  /* fixed 버전 gradient — .device 배경(#f5f5f5)과 동일 컬러, 100% 불투명까지 fill
+     (흰색 #f7f7f7 + 회색 .device = 거의 흰색으로 보이는 문제 해결) */
+  .bs-search-bg--fixed > .bs-grad {
+    background: linear-gradient(
+      to bottom,
+      rgba(245,245,245,0)    0%,
+      rgba(245,245,245,0.07) 18%,
+      rgba(245,245,245,0.18) 32%,
+      rgba(245,245,245,0.30) 45%,
+      rgba(245,245,245,0.52) 57%,
+      rgba(245,245,245,0.72) 67%,
+      rgba(245,245,245,0.88) 76%,
+      rgba(245,245,245,0.96) 84%,
+      rgba(245,245,245,1.00) 100%
+    );
+  }
+  /* blur/opacity 토글 — is-compact 시 배경 블러 전체 숨김 */
+  .bs-search-bg { transition: opacity 0.22s cubic-bezier(0.32, 0.72, 0, 1); }
+  .bs-search-bg.is-compact { opacity: 0; }
   .bs-search {
     position: absolute;
     left: 0; right: 0;
@@ -1593,11 +1645,11 @@
     gap: 12px;
     /* drop-shadow는 자식의 backdrop-filter를 격리시키므로 사용 금지 — 각 자식 box-shadow로 분산 */
     pointer-events: auto;
-    /* 스크롤 단축 모션 — 컨텐츠가 위로 스크롤되면 가로 center · 세로 bottom 기준으로 축소.
-       즉 축소 시 바의 하단은 그대로 정착, 상단만 아래로 내려와 작아지는 느낌 */
+    /* 축소 모션: scale(0.7) = 로고·텍스트·X 전체 동일 비율 축소, width 별도 애니메이션 */
     transform-origin: center bottom;
-    transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1), width 0.22s cubic-bezier(0.32, 0.72, 0, 1);
   }
+  /* compact: scale(0.7) → 시각 높이 52×0.7=36.4≈36px, width는 JS가 텍스트 실측값 주입 */
   .bs-search-area.is-compact { transform: scale(0.7); }
 
   /* 가이드(placeholder) 상태 input — 피드 floating search bar에서 사용 */
@@ -1608,7 +1660,17 @@
      - bs-search-bg / bs-search 와 동일 비주얼, 단 position: fixed (viewport 기준)
      - z-index 100~101 (tab-bar 1010 아래, 피드 콘텐츠 위)
      ===================================================================== */
-  .bs-search-bg--fixed { position: fixed; z-index: 100; display: none; }
+  .bs-search-bg--fixed {
+    position: fixed;
+    z-index: 100;
+    display: none;
+    /* bottom: 0 으로 연장 → 뷰포트 최하단까지 영역 확보
+       height는 동일한 상단 시작점 유지: 158 + 49 + safe-bottom
+       background-color 없음 → blur 위에 그레이 overlay 안 깔림.
+       빈 영역의 그레이 fill은 .device(#f5f5f5) 자체 배경에서 자연스럽게 나옴 */
+    bottom: 0;
+    height: calc(207px + env(safe-area-inset-bottom, 0px));
+  }
   .bs-search--fixed    { position: fixed; z-index: 101; display: none; }
   body.feed-active .bs-search-bg--fixed,
   body.discovery-b-active .bs-search-bg--fixed { display: block; }
@@ -1638,7 +1700,8 @@
     color: #191919;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  /* close 버튼: input과 동일 visual treatment(원형) — 14px backdrop blur + white60 + white90 border */
+  /* 좌측 뒤로가기 / 우측 공유 버튼: input과 동일 visual treatment(원형) — 14px backdrop blur + white60 + white90 border */
+  .bs-search-back,
   .bs-search-close {
     flex: 0 0 52px;
     width: 52px; height: 52px;
@@ -1653,13 +1716,141 @@
     padding: 0;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    /* input mode 진입/이탈 시 가로세로 사이즈는 유지, opacity + translate + 음수 margin으로만 모션 */
+    transition: opacity 0.22s ease, transform 0.28s ease, margin 0.28s ease;
   }
   .bs-search-close__x {
     position: absolute;
-    width: 16px; height: 16px;
+    width: 20px; height: 20px;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
+    display: block;
+  }
+  /* 뒤로가기 꺾쇠는 시각적 무게중심이 좌측에 있어 2px 우측 보정 */
+  .bs-search-back .bs-search-close__x {
+    transform: translate(calc(-50% + 2px), -50%);
+  }
+
+  /* =====================================================================
+     INPUT MODE — 검색바 클릭 시 입력 모드 진입
+     - 좌/우 사이드 버튼 (back/share) 좌우로 페이드아웃
+     - 검색바 input field 활성화 (placeholder + native blinking caret)
+     - 우측에서 search-go 버튼 슬라이드 인 (다크 원형 + 화이트 매그)
+     ===================================================================== */
+
+  /* 입력 모드: compact 스케일/너비 무력화 (스크롤 단축 모션 invariant) */
+  .bs-search-area.is-input-mode {
+    transform: none !important;
+  }
+
+  /* 키보드 호출 시 검색바 lift — JS에서 --keyboard-h 변수 갱신.
+     Active 입력 영역을 가진 .bs-search만 키보드 위 20px로 이동 */
+  .bs-search { transition: bottom 0.25s ease; }
+  body.is-keyboard-up .bs-search:has(.bs-search-area.is-input-mode) {
+    bottom: calc(var(--keyboard-h, 0px) + 20px) !important;
+  }
+  .bs-search-area.is-input-mode .bs-search-input {
+    overflow: visible; /* clear 버튼 잘림 방지 */
+  }
+
+  /* 입력 모드 사이드 버튼: 가로세로 52x52 유지(찌그러짐 없음).
+     - back: margin-right -64로 레이아웃 공간 collapse → input이 좌측으로 64px 확장
+     - close: 위치 변동 없음, 그 자리에서 우측으로 30px slide + opacity 0 (search-go가 같은 자리에서 cross-fade로 등장) */
+  .bs-search-area.is-input-mode .bs-search-back {
+    opacity: 0;
+    transform: translateX(-30px);
+    margin-right: -64px;
+    pointer-events: none;
+  }
+  .bs-search-area.is-input-mode .bs-search-close {
+    opacity: 0;
+    transform: translateX(30px);
+    pointer-events: none;
+  }
+
+  /* search-go 버튼 — 다크 원형 + 화이트 search 아이콘. 항상 52x52 유지.
+     기본: margin-left -64 + translateX 60 + opacity 0 → 레이아웃 점유 0, 우측 off-screen */
+  .bs-search-go {
+    flex: 0 0 52px;
+    width: 52px; height: 52px;
+    position: relative;
+    box-sizing: border-box;
+    background: #191919;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.06), 0 3px 16px rgba(0, 0, 0, 0.15);
+    padding: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    margin-left: -64px;
+    opacity: 0;
+    transform: translateX(60px);
+    pointer-events: none;
+    transition: opacity 0.22s ease 0.04s, transform 0.28s ease, margin 0.28s ease;
+  }
+  .bs-search-go__icon {
+    position: absolute;
+    width: 24px; height: 24px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    display: block;
+  }
+  /* 입력 모드: opacity/translate 복귀 (사이즈 변동 없음) */
+  .bs-search-area.is-input-mode .bs-search-go {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  /* close가 없는 영역(피드/db-detail)은 input 모드에서 go가 layout 공간을 정상 확보 */
+  .bs-search-area.is-input-mode:not(:has(.bs-search-close)) .bs-search-go {
+    margin-left: 0;
+  }
+
+  /* native input field (default 숨김 / input mode 노출) */
+  .bs-search-input__field {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.25;
+    color: #191919;
+    caret-color: #2e2e2e;     /* 깜박이는 다크 캐럿 색상 */
+    padding: 0;
+    margin: 0;
+    display: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .bs-search-input__field::placeholder {
+    color: #696969;
+    opacity: 1;
+  }
+  .bs-search-area.is-input-mode .bs-search-input__field { display: block; }
+  .bs-search-area.is-input-mode .bs-search-input__text   { display: none; }
+
+  /* clear 버튼 (input value 있을 때만 노출) */
+  .bs-search-input__clear {
+    flex: 0 0 24px;
+    width: 24px; height: 24px;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    display: none;
+  }
+  .bs-search-input__clear img {
+    width: 24px; height: 24px;
+    display: block;
+  }
+  .bs-search-area.is-input-mode .bs-search-input__clear.is-visible {
     display: block;
   }
 
@@ -1759,7 +1950,7 @@
     flex: 1 1 auto;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 220px;
+    padding-bottom: 96px;
   }
 
   /* 풀페이지 floating search bar — db-detail 컨테이너 기준 absolute
@@ -1779,12 +1970,28 @@
     bottom: 20px;          /* db-detail 바닥(= tab-bar top) 위 20px */
     z-index: 2;
   }
+  /* 버튼 없이 input만 있으므로 full-width로 확장 */
+  .db-detail__searchbar .bs-search-area {
+    width: calc(100% - 24px);
+  }
 
-  /* 헤더 reveal — 스크롤 시작 전 타이틀+divider 숨김, 스크롤 시작 시 노출 */
-  .db-detail__title { opacity: 0; transition: opacity 0.18s ease; }
-  .db-detail__divider { opacity: 0; transition: opacity 0.18s ease; }
-  .db-detail.is-scrolled .db-detail__title,
-  .db-detail.is-scrolled .db-detail__divider { opacity: 1; }
+  /* 헤더 reveal — 스크롤 시작 전 타이틀+divider 숨김, 스크롤 시작 시 노출
+     iOS PWA의 opacity transition 컴포지터 버그(class 토글되어도 visual 갱신 안 됨) 회피:
+     - divider: transform: scaleY (GPU 가속, opacity와 다른 paint 경로)
+     - title: opacity 유지하되 will-change로 컴포지트 레이어 분리 */
+  .db-detail__title {
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    will-change: opacity;
+  }
+  .db-detail__divider {
+    transform: scaleY(0);
+    transform-origin: center top;
+    transition: transform 0.18s ease;
+    will-change: transform;
+  }
+  .db-detail.is-scrolled .db-detail__title { opacity: 1; }
+  .db-detail.is-scrolled .db-detail__divider { transform: scaleY(1); }
 
   /* =====================================================================
      ===== SCREEN: HOME (홈 칩 선택 시) ===================================
@@ -1799,6 +2006,84 @@
   .screen-wallet.is-active { display: block; }
   .wallet-screenshot { width: 100%; }
   .wallet-screenshot img { width: 100%; display: block; }
+
+  /* =====================================================================
+     FEED FOOTER (발견A·B 피드 최하단 카나나 검색 안내 푸터)
+     Figma node 1010-4451 기준
+     ===================================================================== */
+  .feed-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 0 10px;
+    width: 100%;
+  }
+  .feed-footer__top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding-bottom: 12px;
+    width: 100%;
+  }
+  .feed-footer__title-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .feed-footer__title {
+    font-family: 'Kakao Big Sans', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 32px;
+    color: #767676;
+  }
+  .feed-footer__beta {
+    position: relative;
+    display: inline-block;
+    width: 32px;
+    height: 16px;
+    flex-shrink: 0;
+    vertical-align: middle;
+    margin-bottom: 2px;
+  }
+  .feed-footer__beta img {
+    position: absolute;
+    top: 2.5px;   /* 15.63% × 16px */
+    left: 2px;    /* 6.25%  × 32px */
+    width: 28px;  /* 87.5%  × 32px */
+    height: 9px;  /* 56.25% × 16px */
+    display: block;
+    max-width: none;
+  }
+  .feed-footer__desc {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #767676;
+    text-align: center;
+    width: 209px;
+    margin: 0;
+  }
+  .feed-footer__links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .feed-footer__link {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 13px;
+    line-height: 17px;
+    color: #696969;
+    white-space: nowrap;
+  }
+  .feed-footer__sep {
+    width: 1px;
+    height: 12px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 25px;
+    flex-shrink: 0;
+  }
 
   /* =====================================================================
      SCREEN: DISCOVERY-B (발견B 칩 선택 시)
@@ -2881,6 +3166,22 @@
         </div>
       </article>
 
+      <!-- 피드 푸터 — Figma 1010:4451 카나나 검색 안내 -->
+      <div class="feed-footer" aria-hidden="true">
+        <div class="feed-footer__top">
+          <div class="feed-footer__title-row">
+            <span class="feed-footer__title">카나나 검색</span>
+            <span class="feed-footer__beta"><img src="https://www.figma.com/api/mcp/asset/7909e0cd-b751-43f6-a2d8-f1e06c8d6902" alt="beta"></span>
+          </div>
+          <p class="feed-footer__desc">카나나 검색은 AI 기반 검색 서비스이며, 결과가 정확하지 않을 수 있습니다.</p>
+        </div>
+        <div class="feed-footer__links">
+          <span class="feed-footer__link">설정</span>
+          <div class="feed-footer__sep"></div>
+          <span class="feed-footer__link">권리침해 신고</span>
+        </div>
+      </div>
+
       </section>
       <!-- /screen-feed -->
       <!-- ===================================================================
@@ -3403,15 +3704,25 @@
           <div class="bs-grad"></div>
         </div>
 
-        <!-- Search area (Figma 946:41265) — 시트 하단 floating, [input]+[close] -->
+        <!-- Search area (Figma 946:41265 / 1021:5658 input mode) — 시트 하단 floating -->
         <div class="bs-search">
           <div class="bs-search-area">
+            <button type="button" class="bs-search-back" aria-label="뒤로">
+              <img class="bs-search-close__x" src="images/discover_a/bs-sb-back.svg" alt="" aria-hidden="true">
+            </button>
             <div class="bs-search-input">
               <img class="bs-search-input__logo" src="images/discover_a/bs-sb-kanana-logo.svg" alt="" aria-hidden="true">
               <span class="bs-search-input__text">노티드 우베 디저트</span>
+              <input type="text" class="bs-search-input__field" placeholder="카나나에게 물어보세요" inputmode="search" enterkeyhint="search" autocomplete="off" aria-label="검색">
+              <button type="button" class="bs-search-input__clear" aria-label="입력 지우기">
+                <img src="images/discover_a/bs-sb-clear.svg" alt="" aria-hidden="true">
+              </button>
             </div>
-            <button type="button" class="bs-search-close" aria-label="닫기">
-              <img class="bs-search-close__x" src="images/discover_a/bs-sb-close-x.svg" alt="" aria-hidden="true">
+            <button type="button" class="bs-search-close" aria-label="공유하기">
+              <img class="bs-search-close__x" src="images/discover_a/bs-sb-share.svg" alt="" aria-hidden="true">
+            </button>
+            <button type="button" class="bs-search-go" aria-label="검색">
+              <img class="bs-search-go__icon" src="images/discover_a/bs-sb-search-w.svg" alt="" aria-hidden="true">
             </button>
           </div>
         </div>
@@ -3433,10 +3744,11 @@
           </svg>
         </button>
         <h1 class="db-detail__title">노티드 우베 디저트</h1>
-        <button type="button" class="db-detail__search" aria-label="검색">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="10.75" cy="10.75" r="6.5" fill="none" stroke="currentColor" stroke-width="1.7"/>
-            <path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        <button type="button" class="db-detail__search" aria-label="공유하기">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20.3081 12.9V17.98C20.3081 19.13 19.3775 20.06 18.2296 20.06H5.75852C4.61058 20.06 3.68 19.13 3.68 17.98V12.9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7.42 7.77L11.625 3.57C11.828 3.36 12.157 3.36 12.36 3.57L16.5655 7.77" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M11.99 3.72V13.59" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
       </header>
@@ -3464,9 +3776,13 @@
           <div class="bs-search-input">
             <img class="bs-search-input__logo" src="images/discover_a/bs-sb-kanana-logo.svg" alt="" aria-hidden="true">
             <span class="bs-search-input__text">노티드 우베 디저트</span>
+            <input type="text" class="bs-search-input__field" placeholder="카나나에게 물어보세요" inputmode="search" enterkeyhint="search" autocomplete="off" aria-label="검색">
+            <button type="button" class="bs-search-input__clear" aria-label="입력 지우기">
+              <img src="images/discover_a/bs-sb-clear.svg" alt="" aria-hidden="true">
+            </button>
           </div>
-          <button type="button" class="bs-search-close" id="dbDetailSearchClose" aria-label="닫기">
-            <img class="bs-search-close__x" src="images/discover_a/bs-sb-close-x.svg" alt="" aria-hidden="true">
+          <button type="button" class="bs-search-go" aria-label="검색">
+            <img class="bs-search-go__icon" src="images/discover_a/bs-sb-search-w.svg" alt="" aria-hidden="true">
           </button>
         </div>
       </div>
@@ -3495,7 +3811,14 @@
         <div class="bs-search-input bs-search-input--guide">
           <img class="bs-search-input__logo" src="images/discover_a/bs-sb-kanana-logo.svg" alt="" aria-hidden="true">
           <span class="bs-search-input__text">카나나에게 물어보세요</span>
+          <input type="text" class="bs-search-input__field" placeholder="카나나에게 물어보세요" inputmode="search" enterkeyhint="search" autocomplete="off" aria-label="검색">
+          <button type="button" class="bs-search-input__clear" aria-label="입력 지우기">
+            <img src="images/discover_a/bs-sb-clear.svg" alt="" aria-hidden="true">
+          </button>
         </div>
+        <button type="button" class="bs-search-go" aria-label="검색">
+          <img class="bs-search-go__icon" src="images/discover_a/bs-sb-search-w.svg" alt="" aria-hidden="true">
+        </button>
       </div>
     </div>
 
@@ -3935,6 +4258,8 @@
       });
 
       function activate(screenKey) {
+        // 입력 모드 활성화돼 있으면 해제 (피드 floating 검색바)
+        if (typeof window.__exitSearchInputModes === 'function') window.__exitSearchInputModes();
         // 칩 active 토글
         chips.forEach(function (c) {
           if (c.getAttribute('data-screen') === screenKey) c.classList.add('active');
@@ -3951,8 +4276,6 @@
         document.body.classList.toggle('discovery-b-active', screenKey === 'discovery-b');
         document.body.classList.toggle('discovery-c-active', screenKey === 'discovery-c');
         document.body.classList.toggle('feed-active', screenKey === 'feed');
-        // 동적 카드(쿼리 클릭으로 추가된 fcard) 리셋 — 칩 전환마다 초기 상태로
-        if (typeof window.__resetDynamicFcards === 'function') window.__resetDynamicFcards();
         // 스크롤 리셋 + 헤더 reveal
         window.scrollTo({ top: 0, behavior: 'auto' });
         var topEl = document.querySelector('.top');
@@ -3988,6 +4311,12 @@
       if (!moreTab) return;
 
       moreTab.addEventListener('click', function () {
+        // 바텀시트나 풀페이지가 열려있으면 해당 핸들러에 위임
+        var bsOverlay = document.getElementById('bsOverlay');
+        var dbDetail  = document.getElementById('dbDetail');
+        if ((bsOverlay && bsOverlay.classList.contains('is-open')) ||
+            (dbDetail  && !dbDetail.hidden)) return;
+
         if ((window.scrollY || window.pageYOffset || 0) > 0) {
           // 스크롤 위치가 있으면 최상단으로 이동
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -4170,8 +4499,8 @@
       var DURATION = 420; // CSS transition(0.42s)과 동기
 
       // 노티드 우베 디저트 진입점 — 발견A의 .fcard, 발견B의 .dbcard 모두 지원
-      var target = null;           // 발견A의 fcard (regen 시 insertBefore 기준)
-      var dbcardTarget = null;     // 발견B의 dbcard (regen 안 하므로 reference만)
+      var target = null;
+      var dbcardTarget = null;
       document.querySelectorAll('.screen-feed .fcard').forEach(function (c) {
         var t = c.querySelector('.fcard__title');
         if (t && t.textContent.trim() === '노티드 우베 디저트') target = c;
@@ -4193,9 +4522,6 @@
 
       var closeTimer = null;       // close()의 cleanup 타이머 — open() 시 반드시 취소
       var openSuppressUntil = 0;   // open 직후 합성 click(고스트) 무시할 deadline
-      var sheetOrigin = null;      // 'fcard' (발견A) | 'dbcard' (발견B) — regen 가드
-      var triggerRegen = null;     // close()에서 호출 — 함수는 아래에서 정의
-      var DEFAULT_REGEN_QUERY = '노티드 우베 음료 라인업';
 
       function open() {
         if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
@@ -4212,14 +4538,7 @@
       }
       function close() {
         if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
-        // 어떤 경로(드래그/dim 클릭/ESC/X/쿼리)로 닫히든 — 발견A에서 열린 세션이면 default 쿼리 regen (1회)
-        if (sheetOrigin === 'fcard' && target && feedRoot && !addedQueries.has(DEFAULT_REGEN_QUERY) && typeof triggerRegen === 'function') {
-          var data = QUERY_CARDS[DEFAULT_REGEN_QUERY];
-          if (data) {
-            addedQueries.add(DEFAULT_REGEN_QUERY);
-            triggerRegen({ qText: DEFAULT_REGEN_QUERY, data: data });
-          }
-        }
+        if (typeof window.__exitSearchInputModes === 'function') window.__exitSearchInputModes();
         overlay.classList.remove('is-open');
         sheet.style.transform = '';  // drag로 변경된 inline transform 초기화
         closeTimer = setTimeout(function () {
@@ -4235,13 +4554,11 @@
       if (target) {
         target.addEventListener('click', function (e) {
           if (e.target.closest('button')) return;
-          sheetOrigin = 'fcard';
           open();
         });
         target.addEventListener('keydown', function (e) {
           if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) {
             e.preventDefault();
-            sheetOrigin = 'fcard';
             open();
           }
         });
@@ -4249,13 +4566,11 @@
       if (dbcardTarget) {
         dbcardTarget.addEventListener('click', function (e) {
           if (e.target.closest('button')) return;
-          sheetOrigin = 'dbcard';
           open();
         });
         dbcardTarget.addEventListener('keydown', function (e) {
           if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) {
             e.preventDefault();
-            sheetOrigin = 'dbcard';
             open();
           }
         });
@@ -4267,141 +4582,37 @@
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && overlay.classList.contains('is-open')) close();
       });
+      var searchBack = sheet.querySelector('.bs-search-back');
+      if (searchBack) searchBack.addEventListener('click', function () { close(); });
+
+      // 더보기 탭 — 시트 열린 상태: 스크롤 중이면 최상단, 이미 최상단이면 닫기
+      var moreTabForSheet = document.querySelector('.tab.more');
+      if (moreTabForSheet) {
+        moreTabForSheet.addEventListener('click', function () {
+          if (!overlay.classList.contains('is-open')) return;
+          var scrollEl = sheet.querySelector('.bs-scroll');
+          if (!scrollEl) return;
+          if (scrollEl.scrollTop > 4) {
+            scrollEl.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            close();
+          }
+        });
+      }
       var searchClose = sheet.querySelector('.bs-search-close');
-      if (searchClose) searchClose.addEventListener('click', function () { close(); });
-
-      /* === 관련된 질문(.bs-query) 클릭 → 시트 닫고 origin 카드 위에 새 카드 추가 ===
-         - 중복 클릭은 무시 (한 쿼리는 1회만 추가)
-         - 시트 닫는 모션과 동시에 카드 슬롯이 확장되며 스켈레톤 fade-in
-         - 잠시 후 스켈레톤 → 실제 카드 콘텐츠로 swap (AI generation 흉내) */
-      var QUERY_CARDS = {
-        '노티드 우베 음료 라인업': {
-          title: '노티드 우베 음료 라인업',
-          desc: '노티드는 우베 라떼, 우베 셰이크, 우베 카페라떼, 우베 콜드브루 4종 음료를 출시했습니다. 보랏빛 비주얼과 코코넛 향이 시그니처로, MZ세대 SNS 인증샷 메뉴로 인기를 끌고 있어요.',
-          imgs: [
-            'images/feed/strip-04-ube-drink-1.png',
-            'images/feed/strip-04-ube-drink-2.png',
-            'images/feed/strip-04-ube-drink-3.png'
-          ]
-        },
-        '우베 디저트 신상 추천 2026': {
-          title: '우베 디저트 신상 추천 2026',
-          desc: '2026년 봄 디저트 트렌드의 중심은 우베입니다. 노티드의 우베 도넛 2종 외에도 폴 바셋·투썸 등 주요 카페 브랜드가 보랏빛 디저트 라인업을 잇따라 출시하며 경쟁 구도가 본격화되고 있어요.',
-          img: 'images/feed/strip-01-noted-ube.png'
-        },
-        '노티드 우베 할인 프로모션': {
-          title: '노티드 우베 할인 프로모션',
-          desc: '노티드는 출시를 기념해 4월 30일까지 우베 도넛과 음료를 함께 구매하는 세트 고객에게 10% 할인 혜택을 제공하고 있어요. 카카오페이 결제 시 추가 적립도 함께 적용됩니다.',
-          img: 'images/feed/strip-01-noted-ube.png'
+      if (searchClose) searchClose.addEventListener('click', function () {
+        if (navigator.share) {
+          navigator.share({ title: document.title, url: window.location.href }).catch(function () {});
         }
-      };
-      var addedQueries = new Set();
-      var feedRoot = document.querySelector('.screen-feed');
+      });
 
-      // 스켈레톤 — title 1, desc 2줄, strip 3분할 (양 끝 라운드), foot에 cat shimmer 1 + act shimmer 2
-      function buildSkeletonInner() {
-        return ''
-          + '<div class="fcard__inner">'
-          +   '<div class="fcard__body">'
-          +     '<h3 class="fcard__title"><span class="skel"></span></h3>'
-          +     '<div class="fcard__group">'
-          +       '<p class="fcard__desc">'
-          +         '<span class="skel"></span>'
-          +         '<span class="skel"></span>'
-          +       '</p>'
-          +       '<div class="fcard__strip">'
-          +         '<span class="skel"></span>'
-          +         '<span class="skel"></span>'
-          +         '<span class="skel"></span>'
-          +       '</div>'
-          +     '</div>'
-          +   '</div>'
-          + '</div>'
-          + '<div class="fcard__foot">'
-          +   '<span class="fcard__cat"><span class="skel"></span></span>'
-          +   '<div class="fcard__likelist">'
-          +     '<button type="button" class="fcard__act" disabled><span class="skel"></span></button>'
-          +     '<button type="button" class="fcard__act" disabled><span class="skel"></span></button>'
-          +   '</div>'
-          + '</div>';
-      }
-      function buildRealInner(data) {
-        var stripHTML;
-        if (Array.isArray(data.imgs) && data.imgs.length === 3) {
-          // Figma 975:4666 패턴 — 3개 이미지 분리 strip
-          stripHTML = '<div class="fcard__strip fcard__strip--triple">'
-            + '<img src="' + data.imgs[0] + '" alt="" loading="lazy">'
-            + '<img src="' + data.imgs[1] + '" alt="" loading="lazy">'
-            + '<img src="' + data.imgs[2] + '" alt="" loading="lazy">'
-            + '</div>';
-        } else {
-          stripHTML = '<div class="fcard__strip"><img src="' + data.img + '" alt="' + data.title + ' 이미지" loading="lazy"></div>';
-        }
-        return ''
-          + '<div class="fcard__inner">'
-          +   '<div class="fcard__body">'
-          +     '<h3 class="fcard__title">' + data.title + '</h3>'
-          +     '<div class="fcard__group">'
-          +       '<p class="fcard__desc">' + data.desc + '</p>'
-          +       stripHTML
-          +     '</div>'
-          +   '</div>'
-          + '</div>'
-          + '<div class="fcard__foot">'
-          +   '<span class="fcard__cat"><span class="fcard__bar"></span>트렌드</span>'
-          +   '<div class="fcard__likelist">'
-          +     '<button type="button" class="fcard__act" aria-label="좋아요"><svg class="fcard__ico" viewBox="0 0 24 24" aria-hidden="true"><use href="#fcard-ico-like"></use></svg></button>'
-          +     '<button type="button" class="fcard__act" aria-label="공유"><svg class="fcard__ico" viewBox="0 0 24 24" aria-hidden="true"><use href="#fcard-ico-share"></use></svg></button>'
-          +   '</div>'
-          + '</div>';
-      }
-
-      // 쿼리 클릭 — 단순히 close()만 호출. close 시점에 default 쿼리 regen이 자동 트리거됨.
+      // 관련된 질문(.bs-query) 클릭 → 시트 닫기
       sheet.querySelectorAll('.bs-query').forEach(function (qEl) {
         qEl.addEventListener('click', function (e) {
           e.preventDefault();
           close();
         });
       });
-
-      // close() 시점에 호출되는 카드 재생성 함수 — origin 카드 바로 다음(아래)에 삽입
-      triggerRegen = function (pq) {
-        addedQueries.add(pq.qText);
-        var card = document.createElement('article');
-        card.className = 'fcard fcard--b fcard--dynamic fcard--skeleton is-entering is-collapsed';
-        card.setAttribute('data-query', pq.qText);
-        card.innerHTML = buildSkeletonInner();
-        // origin 카드의 "바로 다음(아래)" 위치에 삽입
-        feedRoot.insertBefore(card, target.nextSibling);
-        // double rAF 후 collapse 해제 → 슬롯 확장 + 스켈레톤 fade-in
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () {
-            card.classList.remove('is-collapsed');
-          });
-        });
-        // 2500ms 후 스켈레톤 → 실제 콘텐츠 swap
-        setTimeout(function () {
-          card.classList.add('is-content-swap');
-          card.style.opacity = '0';
-          setTimeout(function () {
-            card.innerHTML = buildRealInner(pq.data);
-            card.classList.remove('fcard--skeleton');
-            card.style.opacity = '1';
-            setTimeout(function () {
-              card.classList.remove('is-entering', 'is-content-swap');
-              card.style.opacity = '';
-            }, 260);
-          }, 220);
-        }, 2500);
-      };
-
-      // 칩 전환 시 동적 카드 리셋용 (chip 라우터에서 호출)
-      window.__resetDynamicFcards = function () {
-        addedQueries.clear();
-        if (feedRoot) {
-          feedRoot.querySelectorAll('.fcard--dynamic').forEach(function (c) { c.remove(); });
-        }
-      };
 
       /* === bs-handler drag-to-close === */
       var dragging = false;
@@ -4496,21 +4707,17 @@
       var openCloseTimer = null;
       var DURATION = 320; // CSS transition(0.32s)과 동기
 
-      // 헤더 reveal — rAF polling 방식 (open 중에만 매 프레임 scrollTop 직접 읽기)
-      // iOS Safari/PWA에서 scroll 이벤트나 IntersectionObserver가 momentum 직후 안정적으로
-      // 발화되지 않는 케이스가 있어, polling으로 동기화 보장 (close 시 자동 정지)
-      var pollRafId = null;
-      function pollScrollState() {
-        if (!detail.classList.contains('is-open')) {
-          pollRafId = null;
-          return;
-        }
-        var scrolled = detailBody.scrollTop > 0;
-        if (scrolled !== detail.classList.contains('is-scrolled')) {
-          detail.classList.toggle('is-scrolled', scrolled);
-        }
-        pollRafId = requestAnimationFrame(pollScrollState);
-      }
+      // 헤더 reveal — IntersectionObserver 기반 (단순/안정)
+      // 본문 최상단에 sentinel(1px) 삽입 → 보이면 최상단, 안 보이면 스크롤됨.
+      // iOS PWA에서 scrollTop 잔류값/rAF throttle 영향 없이 시각적 위치 그대로 추적.
+      var topSentinel = document.createElement('div');
+      topSentinel.setAttribute('aria-hidden', 'true');
+      topSentinel.style.cssText = 'height:1px;flex:0 0 1px;pointer-events:none;';
+      detailBody.insertBefore(topSentinel, detailBody.firstChild);
+      var topIO = new IntersectionObserver(function (entries) {
+        detail.classList.toggle('is-scrolled', !entries[0].isIntersecting);
+      }, { root: detailBody, threshold: 0 });
+      topIO.observe(topSentinel);
 
       function openDetail() {
         if (openCloseTimer) { clearTimeout(openCloseTimer); openCloseTimer = null; }
@@ -4522,22 +4729,19 @@
         requestAnimationFrame(function () {
           requestAnimationFrame(function () {
             detail.classList.add('is-open');
-            // is-open이 붙은 직후 polling 시작
-            if (pollRafId == null) pollRafId = requestAnimationFrame(pollScrollState);
           });
         });
         document.body.style.overflow = 'hidden';
       }
       function closeDetail() {
         if (!detail.classList.contains('is-open') && detail.hidden) return;
+        if (typeof window.__exitSearchInputModes === 'function') window.__exitSearchInputModes();
         detail.classList.remove('is-open');
-        // polling 즉시 정지
-        if (pollRafId != null) { cancelAnimationFrame(pollRafId); pollRafId = null; }
         openCloseTimer = setTimeout(function () {
           detail.hidden = true;
           detail.setAttribute('aria-hidden', 'true');
           detailBody.scrollTop = 0;
-          detail.classList.remove('is-scrolled');  // 명시적 reset
+          detail.classList.remove('is-scrolled');
           document.body.style.overflow = '';
           openCloseTimer = null;
         }, DURATION);
@@ -4559,12 +4763,13 @@
         if (Date.now() < openSuppressUntil) return;
         closeDetail();
       });
-      // 풀페이지 하단 검색바의 X 버튼 — 풀페이지 닫기 (back 버튼과 동일)
-      var detailSearchClose = document.getElementById('dbDetailSearchClose');
-      if (detailSearchClose) {
-        detailSearchClose.addEventListener('click', function () {
-          if (Date.now() < openSuppressUntil) return;
-          closeDetail();
+      // 풀페이지 GNB 공유하기 버튼 — OS 공유 시트 호출
+      var detailShareBtn = detail.querySelector('.db-detail__search');
+      if (detailShareBtn) {
+        detailShareBtn.addEventListener('click', function () {
+          if (navigator.share) {
+            navigator.share({ title: document.title, url: window.location.href }).catch(function () {});
+          }
         });
       }
       document.addEventListener('keydown', function (e) {
@@ -4580,7 +4785,13 @@
       var moreTab = document.querySelector('.tab.more');
       if (moreTab) {
         moreTab.addEventListener('click', function () {
-          if (!detail.hidden) closeDetail();
+          if (detail.hidden) return;
+          // 스크롤 중이면 최상단, 이미 최상단이면 닫기
+          if (detailBody.scrollTop > 4) {
+            detailBody.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            closeDetail();
+          }
         });
       }
     })();
@@ -4600,33 +4811,84 @@
       var TOP_DEADZONE = 4;      // 이 값 이하면 항상 원 사이즈
       var DIR_DELTA = 1;         // 방향 인지 최소 픽셀 (작은 떨림 방지)
 
+      // 검색바 영역에서 compact 시 적용할 px 너비 계산 — 텍스트 실측 + 비-텍스트 영역
+      //   input 내부: border(2) + padding(14+14=28) + logo(28) + gap(10) + text + safety(6) = 74 + tw
+      //   back/close 버튼 있으면 각각: + area gap(12) + btn(52) = +64
+      function calcCompactWidth(searchArea) {
+        if (!searchArea) return null;
+        var textEl = searchArea.querySelector('.bs-search-input__text');
+        if (!textEl) return null;
+        var text = textEl.textContent || textEl.innerText || '';
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        ctx.font = '400 16px Pretendard, -apple-system, BlinkMacSystemFont, sans-serif';
+        var tw = ctx.measureText(text).width;
+        var width = Math.ceil(74 + tw);
+        if (searchArea.querySelector('.bs-search-back'))  width += 64;
+        if (searchArea.querySelector('.bs-search-close')) width += 64;
+        return width;
+      }
+
       function attachScrollUI(scrollSource, getScrollTop, opts) {
-        // opts.searchArea: 축소 토글 대상 (.bs-search-area)
-        // opts.detailEl:   reveal 토글 대상 (.db-detail) — title/divider 노출용
+        // opts.searchArea:    축소 토글 대상 (.bs-search-area)
+        // opts.bgEl:          블러 배경 요소 — compact 시 함께 is-compact 토글해 블러 숨김
+        // opts.compactWidth:  compact 시 searchArea에 설정할 px 너비 (숫자)
+        // opts.detailEl:      reveal 토글 대상 (.db-detail) — title/divider 노출용
         var lastY = getScrollTop();
         var ticking = false;
         var settleTimer = null;
 
+        // 스크롤 소스의 최대 스크롤 위치 — atBottom 판정용 (PWA elastic bounce 가드)
+        function getScrollMax() {
+          if (scrollSource === window || scrollSource === document) {
+            return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+          }
+          return Math.max(0, scrollSource.scrollHeight - scrollSource.clientHeight);
+        }
+
+        function setCompact(isCompact) {
+          if (opts.searchArea) {
+            var was = opts.searchArea.classList.contains('is-compact');
+            if (was === isCompact) return;
+            opts.searchArea.classList.toggle('is-compact', isCompact);
+            if (opts.compactWidth != null) {
+              opts.searchArea.style.width = isCompact ? opts.compactWidth + 'px' : '';
+            }
+          }
+          if (opts.bgEl) opts.bgEl.classList.toggle('is-compact', isCompact);
+        }
+
         function update() {
           ticking = false;
           var y = getScrollTop();
+          var maxY = getScrollMax();
+          // bounce zone 가드: 양 끝 elastic bounce 시 lastY를 갱신하지 않아 오방향 delta 방지
+          var atTop    = y <= TOP_DEADZONE;
+          var atBottom = maxY > 0 && y >= maxY - 4;
+
+          // 입력 모드 중 스크롤 발생 시 input mode 해제 (전체 검색바)
+          //   debounce 500ms — iOS 키보드 호출 직후의 phantom scroll로 의도치 않게 닫히는 것 방지
+          if (Math.abs(y - lastY) > DIR_DELTA &&
+              typeof window.__exitSearchInputModes === 'function') {
+            window.__exitSearchInputModes({ fromScroll: true });
+          }
 
           if (opts.searchArea) {
-            if (y <= TOP_DEADZONE) {
-              opts.searchArea.classList.remove('is-compact');
+            if (atTop) {
+              setCompact(false);
+            } else if (atBottom) {
+              setCompact(true);
             } else if (y > lastY + DIR_DELTA) {
-              opts.searchArea.classList.add('is-compact');
+              setCompact(true);
             } else if (y < lastY - DIR_DELTA) {
-              opts.searchArea.classList.remove('is-compact');
+              setCompact(false);
             }
           }
 
-          if (opts.detailEl) {
-            // dead zone 1px — iOS PWA에서 fractional scrollTop 잔존 방지
-            opts.detailEl.classList.toggle('is-scrolled', y > 1);
-          }
+          // is-scrolled toggle은 IntersectionObserver(db-detail 초기화 부)에서 처리
 
-          lastY = y;
+          // bounce zone에서는 lastY 고정 — 바운스 복귀 시 false delta 방지
+          if (!atTop && !atBottom) lastY = y;
         }
 
         scrollSource.addEventListener('scroll', function () {
@@ -4641,27 +4903,204 @@
       // 1) bs-sheet 내부 search bar — bs-scroll
       var bsScroll = document.querySelector('#bsOverlay .bs-scroll');
       var bsArea = document.querySelector('#bsOverlay .bs-search-area');
+      var bsBg  = document.querySelector('#bsOverlay .bs-search-bg');
       if (bsScroll && bsArea) {
-        attachScrollUI(bsScroll, function () { return bsScroll.scrollTop; }, { searchArea: bsArea });
+        attachScrollUI(bsScroll, function () { return bsScroll.scrollTop; }, {
+          searchArea: bsArea,
+          bgEl: bsBg,
+          compactWidth: calcCompactWidth(bsArea)
+        });
       }
 
       // 2) 피드 floating search bar — window
       var feedArea = document.getElementById('feedSearchArea');
+      var feedBg   = document.querySelector('.bs-search-bg--fixed');
       if (feedArea) {
         attachScrollUI(window, function () {
           return window.scrollY || window.pageYOffset || 0;
-        }, { searchArea: feedArea });
+        }, {
+          searchArea: feedArea,
+          bgEl: feedBg,
+          compactWidth: calcCompactWidth(feedArea)
+        });
       }
 
-      // 3) db-detail 풀페이지 — 검색바 축소만 처리. is-scrolled 토글은 openDetail/closeDetail의
-      //    rAF polling이 단일 source of truth (iOS Safari/PWA에서 가장 신뢰 가능)
+      // 3) db-detail 풀페이지 — 검색바 축소만 처리.
+      //    is-scrolled 토글은 db-detail 초기화부의 IntersectionObserver가 단일 source of truth.
       var detailBody = document.getElementById('dbDetailBody');
       var detailEl = document.getElementById('dbDetail');
       var detailArea = detailEl ? detailEl.querySelector('.bs-search-area') : null;
+      var detailBg   = detailEl ? detailEl.querySelector('.bs-search-bg') : null;
       if (detailBody && detailEl) {
         attachScrollUI(detailBody, function () { return detailBody.scrollTop; }, {
-          searchArea: detailArea
+          searchArea: detailArea,
+          bgEl: detailBg,
+          compactWidth: calcCompactWidth(detailArea)
         });
+      }
+    })();
+
+    /* =========================================================================
+       INPUT MODE — 검색바 클릭 시 입력 모드 진입
+       - 좌/우 사이드 버튼(back/share) 좌우 페이드아웃
+       - 우측에서 search-go 다크 버튼 슬라이드 인
+       - 네이티브 <input> focus → iOS PWA 소프트 키보드 호출 + 깜박이는 caret
+       - 외부 클릭 / Esc / search-go / Enter → 입력 모드 종료
+       ======================================================================== */
+    (function () {
+      var areas = Array.prototype.slice.call(document.querySelectorAll('.bs-search-area'));
+      if (!areas.length) return;
+
+      function findBg(area) {
+        var search = area.closest('.bs-search');
+        if (!search) return null;
+        var parent = search.parentNode;
+        if (!parent) return null;
+        return parent.querySelector('.bs-search-bg');
+      }
+
+      var lastEnterTime = 0;
+
+      // 비활성 검색바의 input 비활성화 — iOS 폼 어시스턴트 바의 상하 화살표를 비활성(회색) 처리
+      function setOthersDisabled(activeArea, disabled) {
+        areas.forEach(function (other) {
+          if (other === activeArea) return;
+          var f = other.querySelector('.bs-search-input__field');
+          if (!f) return;
+          if (disabled) {
+            f.disabled = true;
+            f.setAttribute('tabindex', '-1');
+          } else {
+            f.disabled = false;
+            f.removeAttribute('tabindex');
+          }
+        });
+      }
+
+      function enter(area) {
+        if (area.classList.contains('is-input-mode')) return;
+        var field = area.querySelector('.bs-search-input__field');
+        var clear = area.querySelector('.bs-search-input__clear');
+
+        // 스크롤 단축(compact) 상태 reset — inline width + is-compact 모두 제거
+        area.classList.remove('is-compact');
+        area.style.width = '';
+        var bg = findBg(area);
+        if (bg) bg.classList.remove('is-compact');
+
+        area.classList.add('is-input-mode');
+        lastEnterTime = Date.now();
+
+        // 다른 검색바 input 비활성화 (iOS 어시스턴트 바 화살표 회색 처리)
+        setOthersDisabled(area, true);
+
+        if (clear) clear.classList.remove('is-visible');
+        if (field) {
+          field.value = '';
+          // 강제 reflow 후 focus — iOS PWA에서 키보드 호출 보장
+          void field.offsetHeight;
+          try { field.focus({ preventScroll: true }); } catch (e) { try { field.focus(); } catch (e2) {} }
+        }
+      }
+
+      function exit(area) {
+        if (!area.classList.contains('is-input-mode')) return;
+        var field = area.querySelector('.bs-search-input__field');
+        var clear = area.querySelector('.bs-search-input__clear');
+        area.classList.remove('is-input-mode');
+        if (field) {
+          field.value = '';
+          try { field.blur(); } catch (e) {}
+        }
+        if (clear) clear.classList.remove('is-visible');
+        // 모든 input 재활성화
+        setOthersDisabled(null, false);
+      }
+
+      // 외부에서 종료용
+      // - fromScroll=true: 스크롤로 인한 자동 종료 (키보드 호출 직후 phantom scroll 회피용 debounce 적용)
+      // - 그 외 (sheet/detail close 등): 즉시 강제 종료
+      window.__exitSearchInputModes = function (opts) {
+        if (opts && opts.fromScroll && Date.now() - lastEnterTime < 500) return;
+        areas.forEach(function (a) { exit(a); });
+      };
+
+      areas.forEach(function (area) {
+        var input = area.querySelector('.bs-search-input');
+        var field = area.querySelector('.bs-search-input__field');
+        var clear = area.querySelector('.bs-search-input__clear');
+        var go    = area.querySelector('.bs-search-go');
+
+        // 검색바 영역 클릭 → 입력 모드 진입
+        if (input) {
+          input.addEventListener('click', function (e) {
+            if (e.target.closest('.bs-search-input__clear')) return;
+            enter(area);
+          });
+        }
+
+        // 입력값에 따라 clear 버튼 토글
+        if (field && clear) {
+          field.addEventListener('input', function () {
+            if (field.value && field.value.length > 0) clear.classList.add('is-visible');
+            else clear.classList.remove('is-visible');
+          });
+        }
+
+        // clear 버튼 → 값 초기화 + focus 유지
+        if (clear && field) {
+          clear.addEventListener('click', function (e) {
+            e.stopPropagation();
+            field.value = '';
+            clear.classList.remove('is-visible');
+            try { field.focus(); } catch (err) {}
+          });
+        }
+
+        // search-go 버튼 → 입력 모드 종료 (검색 액션 stub)
+        if (go) {
+          go.addEventListener('click', function () { exit(area); });
+        }
+
+        // Enter 키 → 입력 모드 종료
+        if (field) {
+          field.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              exit(area);
+            }
+          });
+        }
+      });
+
+      // 외부 클릭 → 활성 input mode 모두 종료
+      document.addEventListener('click', function (e) {
+        areas.forEach(function (area) {
+          if (!area.classList.contains('is-input-mode')) return;
+          if (area.contains(e.target)) return;
+          exit(area);
+        });
+      });
+
+      // Esc → 모든 input mode 종료
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        areas.forEach(function (a) { exit(a); });
+      });
+
+      // visualViewport — 소프트 키보드 높이 감지 → CSS 변수 --keyboard-h 갱신
+      // body.is-keyboard-up 클래스가 활성 검색바를 키보드 위 20px로 lift (CSS 처리)
+      function updateKeyboardHeight() {
+        if (!window.visualViewport) return;
+        var vv = window.visualViewport;
+        var h = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        document.documentElement.style.setProperty('--keyboard-h', h + 'px');
+        document.body.classList.toggle('is-keyboard-up', h > 100);
+      }
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateKeyboardHeight);
+        window.visualViewport.addEventListener('scroll', updateKeyboardHeight);
+        updateKeyboardHeight();
       }
     })();
   </script>

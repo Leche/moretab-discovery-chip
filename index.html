@@ -1744,11 +1744,16 @@
     transform: none !important;
   }
 
-  /* 키보드 호출 시 검색바 lift — JS에서 --keyboard-h 변수 갱신.
-     Active 입력 영역을 가진 .bs-search만 키보드 위 20px로 이동 */
-  .bs-search { transition: bottom 0.25s ease; }
-  body.is-keyboard-up .bs-search:has(.bs-search-area.is-input-mode) {
-    bottom: calc(var(--keyboard-h, 0px) + 20px) !important;
+  /* 키보드 호출 시 검색바 + 블러 배경 lift — JS에서 --keyboard-h 변수 갱신.
+     모든 컨텍스트(피드/시트/풀페이지)의 검색바 viewport bottom = 69+safe로 동일하므로
+     공통 formula: translateY = min(0, 49+safe - keyboard_h) — 키보드 위 20px가 되도록 lift */
+  .bs-search,
+  .bs-search-bg {
+    transition: transform 0.25s ease;
+  }
+  .bs-search.is-active-input,
+  .bs-search-bg.is-active-input {
+    transform: translateY(min(0px, calc(49px + env(safe-area-inset-bottom, 0px) - var(--keyboard-h, 0px))));
   }
   .bs-search-area.is-input-mode .bs-search-input {
     overflow: visible; /* clear 버튼 잘림 방지 */
@@ -4952,11 +4957,15 @@
       if (!areas.length) return;
 
       function findBg(area) {
+        // .bs-search의 직전 형제(.bs-search-bg)를 찾음 — 같은 부모 내 다른 컨텍스트의 bg 오인 방지
         var search = area.closest('.bs-search');
         if (!search) return null;
-        var parent = search.parentNode;
-        if (!parent) return null;
-        return parent.querySelector('.bs-search-bg');
+        var prev = search.previousElementSibling;
+        while (prev) {
+          if (prev.classList && prev.classList.contains('bs-search-bg')) return prev;
+          prev = prev.previousElementSibling;
+        }
+        return null;
       }
 
       var lastEnterTime = 0;
@@ -4981,25 +4990,40 @@
         if (area.classList.contains('is-input-mode')) return;
         var field = area.querySelector('.bs-search-input__field');
         var clear = area.querySelector('.bs-search-input__clear');
+        var inputEl = area.querySelector('.bs-search-input');
+        var textEl = area.querySelector('.bs-search-input__text');
+        var search = area.closest('.bs-search');
+        var bg = findBg(area);
 
         // 스크롤 단축(compact) 상태 reset — inline width + is-compact 모두 제거
         area.classList.remove('is-compact');
         area.style.width = '';
-        var bg = findBg(area);
         if (bg) bg.classList.remove('is-compact');
 
         area.classList.add('is-input-mode');
+        // 검색바 + 블러 배경에 active 마크 → 키보드 호출 시 함께 lift
+        if (search) search.classList.add('is-active-input');
+        if (bg) bg.classList.add('is-active-input');
         lastEnterTime = Date.now();
 
         // 다른 검색바 input 비활성화 (iOS 어시스턴트 바 화살표 회색 처리)
         setOthersDisabled(area, true);
 
-        if (clear) clear.classList.remove('is-visible');
         if (field) {
-          field.value = '';
+          // 피드 floating(--guide)은 빈 input으로 placeholder 노출,
+          // 그 외(시트/풀페이지)는 기존 표시 텍스트를 물고 입력 모드로 진입 → clear 즉시 노출
+          var isGuide = inputEl && inputEl.classList.contains('bs-search-input--guide');
+          var initial = (textEl && !isGuide) ? (textEl.textContent || '').trim() : '';
+          field.value = initial;
+          if (clear) {
+            if (initial.length > 0) clear.classList.add('is-visible');
+            else clear.classList.remove('is-visible');
+          }
           // 강제 reflow 후 focus — iOS PWA에서 키보드 호출 보장
           void field.offsetHeight;
           try { field.focus({ preventScroll: true }); } catch (e) { try { field.focus(); } catch (e2) {} }
+          // 캐럿을 텍스트 끝으로
+          try { field.setSelectionRange(initial.length, initial.length); } catch (e3) {}
         }
       }
 
@@ -5007,7 +5031,11 @@
         if (!area.classList.contains('is-input-mode')) return;
         var field = area.querySelector('.bs-search-input__field');
         var clear = area.querySelector('.bs-search-input__clear');
+        var search = area.closest('.bs-search');
+        var bg = findBg(area);
         area.classList.remove('is-input-mode');
+        if (search) search.classList.remove('is-active-input');
+        if (bg) bg.classList.remove('is-active-input');
         if (field) {
           field.value = '';
           try { field.blur(); } catch (e) {}

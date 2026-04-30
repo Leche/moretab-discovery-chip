@@ -1747,7 +1747,8 @@
      모든 컨텍스트(피드/시트/풀페이지)의 검색바 viewport bottom = 69+safe로 동일하므로
      공통 formula: translateY = min(0, 49+safe - keyboard_h) — 키보드 위 20px가 되도록 lift */
   :root { --keyboard-h: 0px; }
-  body.is-keyboard-up { --keyboard-h: 291px; }
+  /* dummy keyboard 이미지(393x291)의 aspect-ratio 유지 → 디바이스 가로폭 비례 */
+  body.is-keyboard-up { --keyboard-h: calc(100vw * 291 / 393); }
   .bs-search,
   .bs-search-bg {
     transition: transform 0.25s ease;
@@ -1766,7 +1767,8 @@
     position: fixed;
     left: 0; right: 0;
     bottom: 0;
-    height: 291px;
+    width: 100%;
+    aspect-ratio: 393 / 291;
     background: #f0f0f0;
     z-index: 1020;             /* tab-bar(1010) 위, search bar의 시각적 lift는 별도 */
     transform: translateY(100%);
@@ -1774,60 +1776,18 @@
     pointer-events: none;
     user-select: none;
     -webkit-user-select: none;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Pretendard', sans-serif;
+  }
+  .kb-dummy__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    -webkit-user-drag: none;
   }
   body.is-keyboard-up .kb-dummy {
     transform: translateY(0);
     pointer-events: auto;
-  }
-  .kb-rows {
-    padding: 6px 3px 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .kb-row {
-    display: flex;
-    gap: 6px;
-  }
-  .kb-row--2 { padding: 0 23px; }    /* 9 keys 인덴트 */
-  .kb-key {
-    flex: 1 0 0;
-    min-width: 0;
-    height: 42px;
-    background: #ffffff;
-    border-radius: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    font-weight: 400;
-    color: #191919;
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
-    letter-spacing: -0.26px;
-  }
-  .kb-key--func {
-    background: #adb1b9;
-    font-size: 16px;
-  }
-  .kb-row--3 .kb-key--shift,
-  .kb-row--3 .kb-key--delete { flex: 1.41 0 0; font-size: 20px; }
-  .kb-key--abc    { flex: 1.0 0 0; }
-  .kb-key--space  { flex: 4.13 0 0; }
-  .kb-key--return { flex: 1.0 0 0; font-size: 18px; }
-  .kb-bottom {
-    display: flex;
-    justify-content: space-between;
-    padding: 17px 20px 0;
-    box-sizing: border-box;
-  }
-  .kb-bottom__icon {
-    width: 27px; height: 27px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    color: #2e2e2e;
   }
   .bs-search-area.is-input-mode .bs-search-input {
     overflow: visible; /* clear 버튼 잘림 방지 */
@@ -3907,31 +3867,9 @@
     </footer>
   </div>
 
-  <!-- DUMMY KEYBOARD — 검색바 입력 모드 진입 시 슬라이드 인 (Figma 1021:5262 기반)
-       OS 키보드 + 폼 어시스턴트 바 호출 회피 목적의 visual-only 컴포넌트 -->
+  <!-- DUMMY KEYBOARD — Figma "03. Keyboard" (1021:5528) 3x PNG 직접 사용 -->
   <div class="kb-dummy" aria-hidden="true">
-    <div class="kb-rows">
-      <div class="kb-row kb-row--1">
-        <div class="kb-key">ㅂ</div><div class="kb-key">ㅈ</div><div class="kb-key">ㄷ</div><div class="kb-key">ㄱ</div><div class="kb-key">ㅅ</div><div class="kb-key">ㅛ</div><div class="kb-key">ㅕ</div><div class="kb-key">ㅑ</div><div class="kb-key">ㅐ</div><div class="kb-key">ㅔ</div>
-      </div>
-      <div class="kb-row kb-row--2">
-        <div class="kb-key">ㅁ</div><div class="kb-key">ㄴ</div><div class="kb-key">ㅇ</div><div class="kb-key">ㄹ</div><div class="kb-key">ㅎ</div><div class="kb-key">ㅗ</div><div class="kb-key">ㅓ</div><div class="kb-key">ㅏ</div><div class="kb-key">ㅣ</div>
-      </div>
-      <div class="kb-row kb-row--3">
-        <div class="kb-key kb-key--func kb-key--shift">⇧</div>
-        <div class="kb-key">ㅋ</div><div class="kb-key">ㅌ</div><div class="kb-key">ㅊ</div><div class="kb-key">ㅍ</div><div class="kb-key">ㅠ</div><div class="kb-key">ㅜ</div><div class="kb-key">ㅡ</div>
-        <div class="kb-key kb-key--func kb-key--delete">⌫</div>
-      </div>
-      <div class="kb-row kb-row--4">
-        <div class="kb-key kb-key--func kb-key--abc">ABC</div>
-        <div class="kb-key kb-key--func kb-key--space">스페이스</div>
-        <div class="kb-key kb-key--func kb-key--return">↵</div>
-      </div>
-    </div>
-    <div class="kb-bottom">
-      <div class="kb-bottom__icon kb-bottom__emoji">☻</div>
-      <div class="kb-bottom__icon kb-bottom__mic">●</div>
-    </div>
+    <img class="kb-dummy__img" src="images/discover_a/kb-dummy.png" alt="">
   </div>
 
   <!-- Add to Home Screen 안내 배너 (iOS Safari 첫 방문자에게만 노출) -->

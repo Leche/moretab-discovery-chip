@@ -1744,9 +1744,11 @@
     transform: none !important;
   }
 
-  /* 키보드 호출 시 검색바 + 블러 배경 lift — JS에서 --keyboard-h 변수 갱신.
+  /* 더미 키보드 호출 시 검색바 + 블러 배경 lift.
      모든 컨텍스트(피드/시트/풀페이지)의 검색바 viewport bottom = 69+safe로 동일하므로
      공통 formula: translateY = min(0, 49+safe - keyboard_h) — 키보드 위 20px가 되도록 lift */
+  :root { --keyboard-h: 0px; }
+  body.is-keyboard-up { --keyboard-h: 291px; }
   .bs-search,
   .bs-search-bg {
     transition: transform 0.25s ease;
@@ -1754,6 +1756,79 @@
   .bs-search.is-active-input,
   .bs-search-bg.is-active-input {
     transform: translateY(min(0px, calc(49px + env(safe-area-inset-bottom, 0px) - var(--keyboard-h, 0px))));
+  }
+
+  /* =====================================================================
+     DUMMY KEYBOARD — 더보기탭 PWA 환경에서 OS 키보드 + 폼 어시스턴트 바
+     이슈 회피를 위한 visual-only 키보드. 실제 typing 동작 없음.
+     Figma "03. Keyboard" (1021:5262) 한글 자판 기준 / 393x291.
+     ===================================================================== */
+  .kb-dummy {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: 0;
+    height: 291px;
+    background: #f0f0f0;
+    z-index: 1020;             /* tab-bar(1010) 위, search bar의 시각적 lift는 별도 */
+    transform: translateY(100%);
+    transition: transform 0.28s ease;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Pretendard', sans-serif;
+  }
+  body.is-keyboard-up .kb-dummy {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .kb-rows {
+    padding: 6px 3px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .kb-row {
+    display: flex;
+    gap: 6px;
+  }
+  .kb-row--2 { padding: 0 23px; }    /* 9 keys 인덴트 */
+  .kb-key {
+    flex: 1 0 0;
+    min-width: 0;
+    height: 42px;
+    background: #ffffff;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 400;
+    color: #191919;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+    letter-spacing: -0.26px;
+  }
+  .kb-key--func {
+    background: #adb1b9;
+    font-size: 16px;
+  }
+  .kb-row--3 .kb-key--shift,
+  .kb-row--3 .kb-key--delete { flex: 1.41 0 0; font-size: 20px; }
+  .kb-key--abc    { flex: 1.0 0 0; }
+  .kb-key--space  { flex: 4.13 0 0; }
+  .kb-key--return { flex: 1.0 0 0; font-size: 18px; }
+  .kb-bottom {
+    display: flex;
+    justify-content: space-between;
+    padding: 17px 20px 0;
+    box-sizing: border-box;
+  }
+  .kb-bottom__icon {
+    width: 27px; height: 27px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: #2e2e2e;
   }
   .bs-search-area.is-input-mode .bs-search-input {
     overflow: visible; /* clear 버튼 잘림 방지 */
@@ -1813,32 +1888,27 @@
     margin-left: 0;
   }
 
-  /* native input field (default 숨김 / input mode 노출) */
-  .bs-search-input__field {
-    flex: 1 1 auto;
-    min-width: 0;
-    width: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-family: Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
-    font-weight: 400;
-    font-size: 16px;
-    line-height: 1.25;
-    color: #191919;
-    caret-color: #2e2e2e;     /* 깜박이는 다크 캐럿 색상 */
-    padding: 0;
-    margin: 0;
+  /* 입력 모드 시 텍스트 앞에 노출되는 커스텀 caret — 2x20px 다크 pill, 깜박임 */
+  .bs-search-input__caret {
     display: none;
-    -webkit-appearance: none;
-    appearance: none;
+    width: 2px;
+    height: 20px;
+    background: #2e2e2e;
+    border-radius: 100px;
+    vertical-align: -4px;
+    margin-right: 3px;
+    flex-shrink: 0;
   }
-  .bs-search-input__field::placeholder {
-    color: #696969;
-    opacity: 1;
+  .bs-search-area.is-input-mode .bs-search-input__caret {
+    display: inline-block;
+    animation: bs-caret-blink 1.06s step-end infinite;
   }
-  .bs-search-area.is-input-mode .bs-search-input__field { display: block; }
-  .bs-search-area.is-input-mode .bs-search-input__text   { display: none; }
+  @keyframes bs-caret-blink {
+    0%, 49%   { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+  /* clear 후 placeholder 톤으로 회색 처리 */
+  .bs-search-input.is-cleared .bs-search-input__text { color: #696969; }
 
   /* clear 버튼 (input value 있을 때만 노출) */
   .bs-search-input__clear {
@@ -3717,8 +3787,7 @@
             </button>
             <div class="bs-search-input">
               <img class="bs-search-input__logo" src="images/discover_a/bs-sb-kanana-logo.svg" alt="" aria-hidden="true">
-              <span class="bs-search-input__text">노티드 우베 디저트</span>
-              <input type="text" class="bs-search-input__field" placeholder="카나나에게 물어보세요" inputmode="search" enterkeyhint="search" autocomplete="off" aria-label="검색">
+              <span class="bs-search-input__text"><i class="bs-search-input__caret" aria-hidden="true"></i>노티드 우베 디저트</span>
               <button type="button" class="bs-search-input__clear" aria-label="입력 지우기">
                 <img src="images/discover_a/bs-sb-clear.svg" alt="" aria-hidden="true">
               </button>
@@ -3780,8 +3849,7 @@
         <div class="bs-search-area">
           <div class="bs-search-input">
             <img class="bs-search-input__logo" src="images/discover_a/bs-sb-kanana-logo.svg" alt="" aria-hidden="true">
-            <span class="bs-search-input__text">노티드 우베 디저트</span>
-            <input type="text" class="bs-search-input__field" placeholder="카나나에게 물어보세요" inputmode="search" enterkeyhint="search" autocomplete="off" aria-label="검색">
+            <span class="bs-search-input__text"><i class="bs-search-input__caret" aria-hidden="true"></i>노티드 우베 디저트</span>
             <button type="button" class="bs-search-input__clear" aria-label="입력 지우기">
               <img src="images/discover_a/bs-sb-clear.svg" alt="" aria-hidden="true">
             </button>
@@ -3815,8 +3883,7 @@
       <div class="bs-search-area" id="feedSearchArea">
         <div class="bs-search-input bs-search-input--guide">
           <img class="bs-search-input__logo" src="images/discover_a/bs-sb-kanana-logo.svg" alt="" aria-hidden="true">
-          <span class="bs-search-input__text">카나나에게 물어보세요</span>
-          <input type="text" class="bs-search-input__field" placeholder="카나나에게 물어보세요" inputmode="search" enterkeyhint="search" autocomplete="off" aria-label="검색">
+          <span class="bs-search-input__text"><i class="bs-search-input__caret" aria-hidden="true"></i>카나나에게 물어보세요</span>
           <button type="button" class="bs-search-input__clear" aria-label="입력 지우기">
             <img src="images/discover_a/bs-sb-clear.svg" alt="" aria-hidden="true">
           </button>
@@ -3843,6 +3910,33 @@
         <div class="tab more selected"><img src="icons/tab_more@3x.png" width="28" height="28" alt="더보기" /><span class="dot-badge"></span></div>
       </div>
     </footer>
+  </div>
+
+  <!-- DUMMY KEYBOARD — 검색바 입력 모드 진입 시 슬라이드 인 (Figma 1021:5262 기반)
+       OS 키보드 + 폼 어시스턴트 바 호출 회피 목적의 visual-only 컴포넌트 -->
+  <div class="kb-dummy" aria-hidden="true">
+    <div class="kb-rows">
+      <div class="kb-row kb-row--1">
+        <div class="kb-key">ㅂ</div><div class="kb-key">ㅈ</div><div class="kb-key">ㄷ</div><div class="kb-key">ㄱ</div><div class="kb-key">ㅅ</div><div class="kb-key">ㅛ</div><div class="kb-key">ㅕ</div><div class="kb-key">ㅑ</div><div class="kb-key">ㅐ</div><div class="kb-key">ㅔ</div>
+      </div>
+      <div class="kb-row kb-row--2">
+        <div class="kb-key">ㅁ</div><div class="kb-key">ㄴ</div><div class="kb-key">ㅇ</div><div class="kb-key">ㄹ</div><div class="kb-key">ㅎ</div><div class="kb-key">ㅗ</div><div class="kb-key">ㅓ</div><div class="kb-key">ㅏ</div><div class="kb-key">ㅣ</div>
+      </div>
+      <div class="kb-row kb-row--3">
+        <div class="kb-key kb-key--func kb-key--shift">⇧</div>
+        <div class="kb-key">ㅋ</div><div class="kb-key">ㅌ</div><div class="kb-key">ㅊ</div><div class="kb-key">ㅍ</div><div class="kb-key">ㅠ</div><div class="kb-key">ㅜ</div><div class="kb-key">ㅡ</div>
+        <div class="kb-key kb-key--func kb-key--delete">⌫</div>
+      </div>
+      <div class="kb-row kb-row--4">
+        <div class="kb-key kb-key--func kb-key--abc">ABC</div>
+        <div class="kb-key kb-key--func kb-key--space">스페이스</div>
+        <div class="kb-key kb-key--func kb-key--return">↵</div>
+      </div>
+    </div>
+    <div class="kb-bottom">
+      <div class="kb-bottom__icon kb-bottom__emoji">☻</div>
+      <div class="kb-bottom__icon kb-bottom__mic">●</div>
+    </div>
   </div>
 
   <!-- Add to Home Screen 안내 배너 (iOS Safari 첫 방문자에게만 노출) -->
@@ -4946,18 +5040,20 @@
     })();
 
     /* =========================================================================
-       INPUT MODE — 검색바 클릭 시 입력 모드 진입
-       - 좌/우 사이드 버튼(back/share) 좌우 페이드아웃
-       - 우측에서 search-go 다크 버튼 슬라이드 인
-       - 네이티브 <input> focus → iOS PWA 소프트 키보드 호출 + 깜박이는 caret
-       - 외부 클릭 / Esc / search-go / Enter → 입력 모드 종료
+       INPUT MODE — 검색바 클릭 시 입력 모드 진입 (더미 키보드 기반)
+       - OS 키보드 + 폼 어시스턴트 바 호출 회피 위해 native <input> 사용 안 함
+       - body.is-keyboard-up 토글로 .kb-dummy 슬라이드 + --keyboard-h=291px
+       - 커스텀 caret(.bs-search-input__caret)이 텍스트 앞에서 깜박임
+       - clear 클릭 시 텍스트를 placeholder로 교체(visual only, 실 typing 동작 없음)
        ======================================================================== */
     (function () {
       var areas = Array.prototype.slice.call(document.querySelectorAll('.bs-search-area'));
       if (!areas.length) return;
 
+      var PLACEHOLDER_TEXT = '카나나에게 물어보세요';
+      var lastEnterTime = 0;
+
       function findBg(area) {
-        // .bs-search의 직전 형제(.bs-search-bg)를 찾음 — 같은 부모 내 다른 컨텍스트의 bg 오인 방지
         var search = area.closest('.bs-search');
         if (!search) return null;
         var prev = search.previousElementSibling;
@@ -4968,86 +5064,79 @@
         return null;
       }
 
-      var lastEnterTime = 0;
-
-      // 비활성 검색바의 input 비활성화 — iOS 폼 어시스턴트 바의 상하 화살표를 비활성(회색) 처리
-      function setOthersDisabled(activeArea, disabled) {
-        areas.forEach(function (other) {
-          if (other === activeArea) return;
-          var f = other.querySelector('.bs-search-input__field');
-          if (!f) return;
-          if (disabled) {
-            f.disabled = true;
-            f.setAttribute('tabindex', '-1');
-          } else {
-            f.disabled = false;
-            f.removeAttribute('tabindex');
-          }
-        });
+      // 텍스트 노드만 교체 (caret <i> 요소는 보존)
+      function setText(textEl, value) {
+        if (!textEl) return;
+        var caret = textEl.querySelector('.bs-search-input__caret');
+        textEl.textContent = '';
+        if (caret) textEl.appendChild(caret);
+        textEl.appendChild(document.createTextNode(value));
+      }
+      function getText(textEl) {
+        if (!textEl) return '';
+        var clone = textEl.cloneNode(true);
+        var c = clone.querySelector('.bs-search-input__caret');
+        if (c) c.remove();
+        return (clone.textContent || '').trim();
       }
 
       function enter(area) {
         if (area.classList.contains('is-input-mode')) return;
-        var field = area.querySelector('.bs-search-input__field');
-        var clear = area.querySelector('.bs-search-input__clear');
         var inputEl = area.querySelector('.bs-search-input');
-        var textEl = area.querySelector('.bs-search-input__text');
-        var search = area.closest('.bs-search');
-        var bg = findBg(area);
+        var textEl  = area.querySelector('.bs-search-input__text');
+        var clear   = area.querySelector('.bs-search-input__clear');
+        var search  = area.closest('.bs-search');
+        var bg      = findBg(area);
 
-        // 스크롤 단축(compact) 상태 reset — inline width + is-compact 모두 제거
+        // 진입 시 원래 텍스트 보관 (exit 시 복원)
+        if (inputEl && !inputEl.dataset.originalText) {
+          inputEl.dataset.originalText = getText(textEl);
+        }
+
+        // 스크롤 단축(compact) 상태 reset
         area.classList.remove('is-compact');
         area.style.width = '';
         if (bg) bg.classList.remove('is-compact');
 
         area.classList.add('is-input-mode');
-        // 검색바 + 블러 배경에 active 마크 → 키보드 호출 시 함께 lift
         if (search) search.classList.add('is-active-input');
         if (bg) bg.classList.add('is-active-input');
+        document.body.classList.add('is-keyboard-up');
         lastEnterTime = Date.now();
 
-        // 다른 검색바 input 비활성화 (iOS 어시스턴트 바 화살표 회색 처리)
-        setOthersDisabled(area, true);
-
-        if (field) {
-          // 피드 floating(--guide)은 빈 input으로 placeholder 노출,
-          // 그 외(시트/풀페이지)는 기존 표시 텍스트를 물고 입력 모드로 진입 → clear 즉시 노출
-          var isGuide = inputEl && inputEl.classList.contains('bs-search-input--guide');
-          var initial = (textEl && !isGuide) ? (textEl.textContent || '').trim() : '';
-          field.value = initial;
-          if (clear) {
-            if (initial.length > 0) clear.classList.add('is-visible');
-            else clear.classList.remove('is-visible');
-          }
-          // 강제 reflow 후 focus — iOS PWA에서 키보드 호출 보장
-          void field.offsetHeight;
-          try { field.focus({ preventScroll: true }); } catch (e) { try { field.focus(); } catch (e2) {} }
-          // 캐럿을 텍스트 끝으로
-          try { field.setSelectionRange(initial.length, initial.length); } catch (e3) {}
+        // clear 버튼: 시트/풀페이지(쿼리 텍스트 보유)는 노출, 피드 floating(--guide)은 숨김
+        var isGuide = inputEl && inputEl.classList.contains('bs-search-input--guide');
+        var hasText = inputEl && !inputEl.classList.contains('is-cleared') && getText(textEl).length > 0;
+        if (clear) {
+          if (!isGuide && hasText) clear.classList.add('is-visible');
+          else clear.classList.remove('is-visible');
         }
       }
 
       function exit(area) {
         if (!area.classList.contains('is-input-mode')) return;
-        var field = area.querySelector('.bs-search-input__field');
-        var clear = area.querySelector('.bs-search-input__clear');
-        var search = area.closest('.bs-search');
-        var bg = findBg(area);
+        var inputEl = area.querySelector('.bs-search-input');
+        var textEl  = area.querySelector('.bs-search-input__text');
+        var clear   = area.querySelector('.bs-search-input__clear');
+        var search  = area.closest('.bs-search');
+        var bg      = findBg(area);
+
         area.classList.remove('is-input-mode');
         if (search) search.classList.remove('is-active-input');
         if (bg) bg.classList.remove('is-active-input');
-        if (field) {
-          field.value = '';
-          try { field.blur(); } catch (e) {}
-        }
         if (clear) clear.classList.remove('is-visible');
-        // 모든 input 재활성화
-        setOthersDisabled(null, false);
+
+        // 원래 텍스트 복원 + cleared 상태 해제
+        if (inputEl && inputEl.dataset.originalText != null) {
+          setText(textEl, inputEl.dataset.originalText);
+        }
+        if (inputEl) inputEl.classList.remove('is-cleared');
+
+        // 다른 검색바도 모두 input 모드 아니면 키보드 닫기
+        var anyActive = areas.some(function (a) { return a.classList.contains('is-input-mode'); });
+        if (!anyActive) document.body.classList.remove('is-keyboard-up');
       }
 
-      // 외부에서 종료용
-      // - fromScroll=true: 스크롤로 인한 자동 종료 (키보드 호출 직후 phantom scroll 회피용 debounce 적용)
-      // - 그 외 (sheet/detail close 등): 즉시 강제 종료
       window.__exitSearchInputModes = function (opts) {
         if (opts && opts.fromScroll && Date.now() - lastEnterTime < 500) return;
         areas.forEach(function (a) { exit(a); });
@@ -5055,9 +5144,9 @@
 
       areas.forEach(function (area) {
         var input = area.querySelector('.bs-search-input');
-        var field = area.querySelector('.bs-search-input__field');
         var clear = area.querySelector('.bs-search-input__clear');
         var go    = area.querySelector('.bs-search-go');
+        var textEl = area.querySelector('.bs-search-input__text');
 
         // 검색바 영역 클릭 → 입력 모드 진입
         if (input) {
@@ -5067,42 +5156,25 @@
           });
         }
 
-        // 입력값에 따라 clear 버튼 토글
-        if (field && clear) {
-          field.addEventListener('input', function () {
-            if (field.value && field.value.length > 0) clear.classList.add('is-visible');
-            else clear.classList.remove('is-visible');
-          });
-        }
-
-        // clear 버튼 → 값 초기화 + focus 유지
-        if (clear && field) {
+        // clear 버튼 → 텍스트를 placeholder로 교체 (visual only, 실 typing은 미구현)
+        if (clear) {
           clear.addEventListener('click', function (e) {
             e.stopPropagation();
-            field.value = '';
+            setText(textEl, PLACEHOLDER_TEXT);
+            if (input) input.classList.add('is-cleared');
             clear.classList.remove('is-visible');
-            try { field.focus(); } catch (err) {}
           });
         }
 
-        // search-go 버튼 → 입력 모드 종료 (검색 액션 stub)
+        // search-go 버튼 → 입력 모드 종료
         if (go) {
           go.addEventListener('click', function () { exit(area); });
         }
-
-        // Enter 키 → 입력 모드 종료
-        if (field) {
-          field.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              exit(area);
-            }
-          });
-        }
       });
 
-      // 외부 클릭 → 활성 input mode 모두 종료
+      // 외부 클릭 → 활성 input mode 모두 종료 (단, 더미 키보드 클릭은 무시)
       document.addEventListener('click', function (e) {
+        if (e.target.closest('.kb-dummy')) return;
         areas.forEach(function (area) {
           if (!area.classList.contains('is-input-mode')) return;
           if (area.contains(e.target)) return;
@@ -5116,20 +5188,6 @@
         areas.forEach(function (a) { exit(a); });
       });
 
-      // visualViewport — 소프트 키보드 높이 감지 → CSS 변수 --keyboard-h 갱신
-      // body.is-keyboard-up 클래스가 활성 검색바를 키보드 위 20px로 lift (CSS 처리)
-      function updateKeyboardHeight() {
-        if (!window.visualViewport) return;
-        var vv = window.visualViewport;
-        var h = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-        document.documentElement.style.setProperty('--keyboard-h', h + 'px');
-        document.body.classList.toggle('is-keyboard-up', h > 100);
-      }
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', updateKeyboardHeight);
-        window.visualViewport.addEventListener('scroll', updateKeyboardHeight);
-        updateKeyboardHeight();
-      }
     })();
   </script>
 </body>

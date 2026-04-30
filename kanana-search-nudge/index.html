@@ -117,7 +117,7 @@
      Regular: header 104 ↔ tab-bar 49 / Standalone(PWA): header 104+safe-top ↔ tab-bar 49+safe-bottom */
   .bg-gradient {
     position: absolute;
-    top: 104px; left: 0; right: 0;
+    top: calc(104px + env(safe-area-inset-top, 0px)); left: 0; right: 0;
     bottom: 49px;
     background: #f5f5f5;
     z-index: 0;
@@ -159,7 +159,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 104px;
+    height: calc(104px + env(safe-area-inset-top, 0px));
     background: #ffffff;
     z-index: -1;
     pointer-events: none;
@@ -177,6 +177,8 @@
     right: 0;
     z-index: 100;
     background: #ffffff;
+    /* Safari 브라우저(non-PWA)에서도 status bar 영역을 흰색으로 가리기 위해 항상 safe-area 적용 */
+    padding-top: env(safe-area-inset-top, 0px);
     transition: transform 160ms cubic-bezier(0.22, 0.61, 0.36, 1);
     will-change: transform;
   }
@@ -219,7 +221,7 @@
     justify-content: center;
     height: 56px;
     padding: 8px 12px 8px 0;
-    gap: 10px;
+    gap: 4px;
   }
   .main-tab .logo {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
@@ -228,6 +230,48 @@
     line-height: normal;
     color: #191919;
     white-space: nowrap;
+  }
+  .main-tab .logo-tab {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px 6px; /* 탭 탭 영역 확보 */
+    font-weight: 700;
+    font-size: 21px;
+    line-height: normal;
+    color: var(--gray300);
+    white-space: nowrap;
+    transition: color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .main-tab .logo-tab.active { color: #191919; }
+  .main-tab .logo-sep {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--gray200);
+    user-select: none;
+    pointer-events: none;
+  }
+  /* 넛지 방식별 요소 노출 제어 */
+  body[data-nudge="1"] .chip-badge-n {
+    width: 0; margin-left: 0; opacity: 0;
+    transition: none; /* 초기 로드·모드 전환 시 즉시 숨김 */
+  }
+  /* 더보기2: 슬롯은 collapse + 안쪽 button은 원사이즈 그대로 아래로 빠진 채 대기 */
+  body[data-nudge="2"] .kanana-nudge-slot {
+    height: 0;
+    margin-top: -12px; /* screen-home gap:12px 상쇄 → 서비스↔광고 사이 정확히 12px */
+    /* EXIT: button opacity가 먼저 fade out 된 뒤 슬롯이 collapse */
+    transition: height 400ms cubic-bezier(0.22, 0.61, 0.36, 1) 100ms,
+                margin-top 400ms cubic-bezier(0.22, 0.61, 0.36, 1) 100ms;
+  }
+  body[data-nudge="2"] .kanana-nudge {
+    /* button은 원사이즈 유지(52×100%), 시각적으로만 위로 빠지고 투명 처리 */
+    transform: translateY(-52px);
+    opacity: 0;
+    /* EXIT: opacity 먼저 fade out → 슬롯 collapse 동안 슬라이드 업은 따라감 */
+    transition: opacity 200ms ease,
+                transform 400ms cubic-bezier(0.22, 0.61, 0.36, 1) 100ms;
   }
   /* Trailing controls (Figma: 1321:3714) — gap-9, h-56, justify-end */
   .main-tab .actions {
@@ -311,6 +355,134 @@
     border-color: #191919;
   }
 
+  /* ===== [Nudge 2] 카카오검색 chip 우측 NEW(N) 뱃지
+     Figma A. Tab / 02. XLarge + Badge (6914:1162) 기준
+     bg #F4551E, white "N" Pretendard Bold 10px, padding 3/4, radius 12 ===== */
+  /* kanana-chip: gap 0 — 간격은 뱃지 margin-left로 제어 */
+  .chip.kanana-chip { gap: 0; }
+
+  /* ===== N 뱃지 SVG wrapper — 정원 18×18, 단계화 트랜지션 =====
+     보일 때 항상 완전한 정원으로 보이도록 칩 너비 변화와 뱃지 fade를 시간 분리
+     ENTER (300ms): 0~200ms 칩 너비 0→22 / 200~300ms 뱃지 opacity 0→1
+     EXIT  (300ms): 0~100ms 뱃지 opacity 1→0 / 100~300ms 칩 너비 22→0
+     → 트랜지션 중에는 뱃지가 보이거나 안 보이거나 둘 중 하나, 잘린 반원 상태 없음 */
+  .chip-badge-n {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* overflow: hidden 제거 — SVG 우측 anti-alias edge 잘림 방지.
+       단계화 타이밍상 width<18일 때는 항상 opacity:0이라 visual 문제 없음 */
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-left: 4px;
+    opacity: 1;
+    /* ENTER: 칩 width/margin 200ms → opacity 100ms (delay 200ms) */
+    transition: width 200ms ease, margin-left 200ms ease, opacity 100ms ease 200ms;
+  }
+  .chip-badge-n svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: block;
+  }
+  /* chip이 active이거나 acknowledged이면 숨김 — EXIT 타이밍 적용 */
+  .kanana-chip.active .chip-badge-n,
+  body.kanana-acknowledged .chip-badge-n {
+    width: 0; margin-left: 0; opacity: 0;
+    /* EXIT: opacity 100ms 먼저 → width/margin 200ms (delay 100ms) */
+    transition: width 200ms ease 100ms, margin-left 200ms ease 100ms, opacity 100ms ease;
+  }
+
+
+  /* ===== [Nudge 1] 홈 화면 안의 카나나 검색 진입 카드
+     구조: .kanana-nudge-slot (layout 담당, height 트랜지션) > .kanana-nudge (visual, 항상 원사이즈 + translateY 슬라이드)
+     ENTER (더보기2→1): 슬롯 height 0→52 + margin-top -12→0 (서비스↔광고 사이 gap 벌어짐)
+                       + 안쪽 button translateY(52)→0 (아래에서 위로 슬라이드업) + opacity 0→1
+     EXIT  (더보기1→2): opacity 먼저 fade out → 슬롯이 collapse 되며 button이 아래로 빠짐 */
+  .kanana-nudge-slot {
+    height: 52px;
+    margin-top: 0;
+    overflow: hidden; /* button이 아래로 빠질 때 clip */
+    /* ENTER: 슬롯이 먼저 펼쳐짐 */
+    transition: height 400ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                margin-top 400ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .kanana-nudge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 52px;
+    padding: 12px 14px;
+    box-sizing: border-box;
+    /* C안 그라데이션 — 카드 배경 자체에 핑크/코랄 톤 (양 끝에서 살짝 더 진하게) */
+    background:
+      radial-gradient(ellipse 90% 100% at 100% 50%, rgba(255, 121, 109, 0.18), transparent 70%),
+      radial-gradient(ellipse 80% 100% at 0% 50%, rgba(255, 92, 170, 0.14), transparent 60%),
+      #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;       /* 다른 홈 슬롯들과 라운드 통일 */
+    box-shadow: 0 0.5px 4px rgba(0, 0, 0, 0.04);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    position: relative; /* ::before 그라데이션 데코 기준점 */
+    overflow: hidden;   /* 그라데이션이 라운드 모서리 안에서만 보이도록 */
+    /* visual transition: 항상 원사이즈, 슬라이드 + fade만 */
+    opacity: 1;
+    transform: translateY(0);
+    /* ENTER: 슬롯 펼쳐지는 동안 button도 슬라이드업 + fade in */
+    transition: transform 400ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                opacity 300ms ease 100ms;
+  }
+  .kanana-nudge__logo {
+    flex: 0 0 24px;
+    width: 24px; height: 24px;
+    display: block;
+  }
+  .kanana-nudge__text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 500; /* Medium */
+    font-size: 15px;
+    line-height: 1.25;
+    color: #191919;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: relative; /* 그라데이션 ::before 위로 올림 */
+    z-index: 1;
+  }
+  .kanana-nudge__logo,
+  .kanana-nudge__cta { position: relative; z-index: 1; }
+  /* CTA — 클릭 시 카나나검색 chip 활성 + 검색 모드 진입을 시각적으로 강조 */
+  .kanana-nudge__cta {
+    flex: 0 0 auto;
+    background: #191919;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1;
+    padding: 8px 11px;
+    border-radius: 8px;
+    white-space: nowrap;
+  }
+  /* C안 그라데이션 — 우측에 핑크/오렌지 액센트, 살짝 더 진하게 */
+  .kanana-nudge::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; right: 0;
+    width: 35%;
+    background:
+      radial-gradient(circle 50px at 70% 30%, rgba(255, 40, 125, 0.30), transparent 70%),
+      radial-gradient(circle 60px at 95% 70%, rgba(255, 160, 102, 0.32), transparent 70%);
+    filter: blur(4px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
   /* ===== FEED =====
      .top은 position:sticky로 flow에 자리 잡으므로 padding-top 오프셋 불필요.
      하단 .tab-bar(fixed 49px)만큼만 padding-bottom으로 확보.
@@ -318,7 +490,7 @@
   .feed {
     position: relative;
     z-index: 5;
-    padding: 104px 0 20px; /* top: fixed .top 헤더(56+48) 오프셋, bottom: 시각적 여백 */
+    padding: calc(104px + env(safe-area-inset-top, 0px)) 0 20px; /* top: fixed .top 헤더(56+48) + safe-area 오프셋, bottom: 시각적 여백 */
   }
 
   /* ===== Share row (info+share) — Figma 1321:3799 =====
@@ -2814,7 +2986,7 @@
   }
 </style>
 </head>
-<body class="discovery-b-active">
+<body data-nudge="1">
   <!-- Status bar 영역 마스크 — translucent status bar 뒤를 항상 흰색으로 가림 (시트 열릴 땐 bs-overlay가 dim으로 덮음) -->
   <div class="status-bar-mask" aria-hidden="true"></div>
   <div class="device">
@@ -2825,7 +2997,10 @@
       <!-- Main tab (피그마 1321:3710) -->
       <div class="main-tab">
         <!-- Title Type (피그마 1321:3713) -->
-        <div class="logo-wrap"><div class="logo">더보기</div></div>
+        <div class="logo-wrap">
+          <button class="logo-tab active" data-variant="1">더보기1</button>
+          <button class="logo-tab" data-variant="2">더보기2</button>
+        </div>
         <!-- Trailing controls (피그마 1321:3714) -->
         <div class="actions">
           <!-- NavigationSearch (피그마 1321:3714 > Trailing Button1) -->
@@ -2839,10 +3014,19 @@
 
       <!-- Top Chip - XLarge (피그마 1321:3715) -->
       <div class="chip-bar">
-        <div class="chip"><span class="chip-txt">홈</span></div>
+        <div class="chip active home-chip"><span class="chip-txt">홈</span></div>
         <div class="chip"><span class="chip-txt">지갑</span></div>
-        <!-- 카카오검색 칩 — 발견A와 동일한 피드 + 카드 클릭 시 2뎁스 풀페이지로 진입 -->
-        <div class="chip active"><span class="chip-txt">카카오검색</span></div>
+        <!-- 카카오검색 칩 — 카드 클릭 시 2뎁스 풀페이지 진입.
+             [Nudge 2] 우측에 NEW(N) 뱃지 — chip이 active가 되면 자동 숨김 -->
+        <div class="chip kanana-chip">
+          <span class="chip-txt">카나나검색</span>
+          <span class="chip-badge-n" aria-label="새 기능"><!-- N badge SVG — 정원 18×18, #F4551E, Pretendard Bold 10px -->
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="9" cy="9" r="9" fill="#F4551E"/>
+              <text x="9" y="9" dy=".35em" text-anchor="middle" font-family="Pretendard,-apple-system,sans-serif" font-weight="700" font-size="10" fill="#ffffff">N</text>
+            </svg>
+          </span>
+        </div>
         <!-- 발견_백업 칩 — 옛 발견B(card-news/dbcard/dbshorts 디자인) 백업
              현재 hide 처리. 복구하려면 style="display:none" 제거 + 아래 활성화 안내 참조:
              - SCREEN_BY_LABEL에 '발견_백업': 'discovery-c' 매핑 추가 필요
@@ -3256,7 +3440,7 @@
            발견A의 .screen-feed 콘텐츠를 JS로 클론하여 채움 (비교용 피드 복제)
            카드 클릭 → bs-sheet 대신 2뎁스 풀페이지(.db-detail) 진입
            =================================================================== -->
-      <section class="screen screen-discovery-b is-active" data-screen="discovery-b" id="screenDiscoveryB">
+      <section class="screen screen-discovery-b" data-screen="discovery-b" id="screenDiscoveryB">
         <!-- JS가 런타임에 .screen-feed의 자식 노드를 복제해 채웁니다. -->
       </section>
       <!-- /screen-discovery-b -->
@@ -3598,7 +3782,7 @@
       <!-- ===================================================================
            SCREEN: HOME (홈 칩 선택 시) — Figma 3982:180303 기반
            =================================================================== -->
-      <section class="screen screen-home" data-screen="home" id="homeScreen">
+      <section class="screen screen-home is-active" data-screen="home" id="homeScreen">
       <!-- 홈 화면 컴포넌트는 JS가 렌더링합니다. HOME_COMPONENTS 배열에서 데이터를 수정하세요. -->
       </section>
             <!-- /screen-home -->
@@ -3973,6 +4157,9 @@
         }
       },
 
+      /* ②-A [Nudge 1] 카나나검색 진입 카드 — 서비스 그리드와 광고 사이 */
+      { type: 'KananaNudge', props: {} },
+
       /* ③ HomeAd — Figma 5074:20173 (AOS / Moretab / AD) */
       {
         type: 'HomeAd',
@@ -4075,6 +4262,24 @@
               '<span class="pay-amount">' + p.amount + '</span>' +
             '</div>' +
             '<div class="pay-btns">' + btns + '</div>' +
+          '</div>'
+        );
+      },
+
+      /* ①-A [Nudge 1] KananaNudge
+         홈 슬롯에 정적 카드로 노출되는 카나나 검색 진입점.
+         시각: 검색바 미니어처(Kanana 로고 + placeholder + NEW 뱃지).
+         클릭: 카카오검색 chip 활성화 + floating 검색바 입력 모드 진입 */
+      KananaNudge: function () {
+        // slot은 layout(height) 트랜지션 담당 / 내부 button은 항상 원사이즈로 translateY 슬라이드
+        // CTA: 클릭 시 카나나검색 chip 활성 + 검색 모드 진입 (button 전체가 클릭 영역)
+        return (
+          '<div class="kanana-nudge-slot">' +
+            '<button type="button" class="kanana-nudge" data-nudge="kanana" aria-label="AI가 골라준 새 발견 피드 둘러보기">' +
+              '<img class="kanana-nudge__logo" src="../images/discover_a/bs-sb-kanana-logo.svg" alt="" aria-hidden="true">' +
+              '<span class="kanana-nudge__text">카나나가 추천하는 새로운 피드</span>' +
+              '<span class="kanana-nudge__cta" aria-hidden="true">둘러보기</span>' +
+            '</button>' +
           '</div>'
         );
       },
@@ -4312,10 +4517,13 @@
       if (!chips.length) return;
 
       // 칩 텍스트 → data-screen 매핑 (구현된 화면만)
-      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '카카오검색': 'discovery-b' };
+      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '카나나검색': 'discovery-b' };
 
       chips.forEach(function (chip) {
-        var label = (chip.textContent || '').trim();
+        // chip 내부에 .chip-txt + 보조 element(N 뱃지 등)가 함께 있는 경우를 위해
+        // textContent 대신 .chip-txt만 사용 — 그렇지 않으면 'N' 같은 부수 텍스트가 라벨에 섞임
+        var txtEl = chip.querySelector('.chip-txt');
+        var label = (txtEl ? txtEl.textContent : chip.textContent || '').trim();
         var key = SCREEN_BY_LABEL[label];
         if (key) chip.setAttribute('data-screen', key);
         chip.setAttribute('role', 'tab');
@@ -5206,6 +5414,94 @@
         areas.forEach(function (a) { exit(a); });
       });
 
+    })();
+
+    /* =========================================================================
+       KANANA SEARCH CHIP NUDGE — 두 가지 유도 동선 운영 로직
+       [Nudge 1] 홈 카드 슬롯 (.kanana-nudge) 클릭 → 카카오검색 chip 활성 + 입력 모드 진입
+       [Nudge 2] 카카오검색 chip 우측 N 뱃지 (홈 chip 활성 동안만)
+       - chip 한 번이라도 클릭(=활성) 시 N 뱃지 영구 숨김 (body.kanana-acknowledged)
+       ======================================================================== */
+    (function () {
+      var kananaChip = document.querySelector('.chip.kanana-chip');
+
+      // chip의 active 상태 변화 관찰 → 카카오검색 chip이 active되면 N 뱃지 영구 숨김
+      if (kananaChip) {
+        new MutationObserver(function () {
+          if (kananaChip.classList.contains('active')) {
+            document.body.classList.add('kanana-acknowledged');
+          }
+        }).observe(kananaChip, { attributes: true, attributeFilter: ['class'] });
+      }
+
+      // [Nudge 1] 홈 카드 클릭 → 카카오검색 chip 활성 + 입력 모드 진입
+      document.addEventListener('click', function (e) {
+        var nudge = e.target.closest('[data-nudge="kanana"]');
+        if (!nudge) return;
+        if (window.MoreTab) window.MoreTab.activate('discovery-b');
+        // chip 활성화 후 floating 검색바 입력 모드 진입 (display 전환 settle 대기)
+        setTimeout(function () {
+          var feedArea = document.getElementById('feedSearchArea');
+          if (!feedArea) return;
+          var input = feedArea.querySelector('.bs-search-input');
+          if (input) input.click();
+        }, 220);
+      });
+
+      // 더보기 1 / 더보기 2 전환 API 노출 — 더보기 2 진입 시 acknowledged 초기화
+      window.KananaNudge = {
+        setVariant: function (v) {
+          if (v === 2) {
+            document.body.classList.remove('kanana-acknowledged');
+            if (kananaChip) kananaChip.classList.remove('active');
+          }
+        }
+      };
+    })();
+
+    // 더보기1 / 더보기2 탭 전환
+    (function () {
+      var tabs = document.querySelectorAll('.logo-tab');
+      tabs.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var v = parseInt(btn.dataset.variant, 10);
+          tabs.forEach(function (b) { b.classList.toggle('active', b === btn); });
+
+          // 어떤 칩에 있던 무조건 홈 칩으로 전환
+          if (window.MoreTab && typeof window.MoreTab.getActiveScreen === 'function'
+              && window.MoreTab.getActiveScreen() !== 'home') {
+            window.MoreTab.activate('home');
+          }
+
+          if (v === 2) {
+            // ENTER: width/margin/opacity 단계화 트랜지션 (칩 너비 → 뱃지 fade 순서)
+            var badges = document.querySelectorAll('.chip-badge-n');
+            // ① 시작 상태 인라인 고정 (transition:none 규칙이 사라지기 전에)
+            badges.forEach(function (b) {
+              b.style.transition = 'none';
+              b.style.width      = '0';
+              b.style.marginLeft = '0';
+              b.style.opacity    = '0';
+            });
+            document.body.dataset.nudge = v;
+            // ② 두 프레임 후 인라인 제거 → CSS transition으로 목표값까지 애니메이션
+            requestAnimationFrame(function () {
+              requestAnimationFrame(function () {
+                badges.forEach(function (b) {
+                  b.style.transition = '';
+                  b.style.width      = '';
+                  b.style.marginLeft = '';
+                  b.style.opacity    = '';
+                });
+              });
+            });
+          } else {
+            document.body.dataset.nudge = v;
+          }
+
+          if (window.KananaNudge) window.KananaNudge.setVariant(v);
+        });
+      });
     })();
   </script>
 </body>

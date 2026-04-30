@@ -1571,8 +1571,9 @@
   .bs-search-bg > .bs-blur {
     position: absolute;
     left: 0; right: 0;
-    backdrop-filter: blur(var(--b)) saturate(160%);
-    -webkit-backdrop-filter: blur(var(--b)) saturate(160%);
+    /* saturate 제거 — 24레이어 스택 시 채도 누적 증폭으로 컬러가 지저분해 보이는 이슈 해결 */
+    backdrop-filter: blur(var(--b));
+    -webkit-backdrop-filter: blur(var(--b));
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 var(--mask-end));
             mask-image: linear-gradient(to bottom, transparent 0%, #000 var(--mask-end));
   }

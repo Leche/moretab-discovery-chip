@@ -2814,7 +2814,7 @@
   }
 </style>
 </head>
-<body class="feed-active">
+<body class="discovery-b-active">
   <!-- Status bar 영역 마스크 — translucent status bar 뒤를 항상 흰색으로 가림 (시트 열릴 땐 bs-overlay가 dim으로 덮음) -->
   <div class="status-bar-mask" aria-hidden="true"></div>
   <div class="device">
@@ -2841,11 +2841,8 @@
       <div class="chip-bar">
         <div class="chip"><span class="chip-txt">홈</span></div>
         <div class="chip"><span class="chip-txt">지갑</span></div>
-        <div class="chip active"><span class="chip-txt">발견A</span></div>
-        <!-- 발견B 칩 — 발견A 클론 + 카드 클릭 시 bs-sheet 진입 (단, tab-bar 미노출) -->
-        <div class="chip"><span class="chip-txt">발견B</span></div>
-        <!-- 발견C 칩 — 발견A와 동일한 피드 + 카드 클릭 시 2뎁스 풀페이지로 진입 (비교용) -->
-        <div class="chip"><span class="chip-txt">발견C</span></div>
+        <!-- 카카오검색 칩 — 발견A와 동일한 피드 + 카드 클릭 시 2뎁스 풀페이지로 진입 -->
+        <div class="chip active"><span class="chip-txt">카카오검색</span></div>
         <!-- 발견_백업 칩 — 옛 발견B(card-news/dbcard/dbshorts 디자인) 백업
              현재 hide 처리. 복구하려면 style="display:none" 제거 + 아래 활성화 안내 참조:
              - SCREEN_BY_LABEL에 '발견_백업': 'discovery-c' 매핑 추가 필요
@@ -2859,7 +2856,7 @@
       <!-- ===================================================================
            SCREEN: FEED (발견 칩 선택 시) — 기존 콘텐츠를 screen 컨테이너로 wrap
            =================================================================== -->
-      <section class="screen screen-feed is-active" data-screen="feed">
+      <section class="screen screen-feed" data-screen="feed">
 
       <!-- Footer 4-action 아이콘 (Like/Reply/Share/Bookmark) — Figma export, 카드마다 <use> 참조 -->
       <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
@@ -3259,7 +3256,7 @@
            발견A의 .screen-feed 콘텐츠를 JS로 클론하여 채움 (비교용 피드 복제)
            카드 클릭 → bs-sheet 대신 2뎁스 풀페이지(.db-detail) 진입
            =================================================================== -->
-      <section class="screen screen-discovery-b" data-screen="discovery-b" id="screenDiscoveryB">
+      <section class="screen screen-discovery-b is-active" data-screen="discovery-b" id="screenDiscoveryB">
         <!-- JS가 런타임에 .screen-feed의 자식 노드를 복제해 채웁니다. -->
       </section>
       <!-- /screen-discovery-b -->
@@ -4315,7 +4312,7 @@
       if (!chips.length) return;
 
       // 칩 텍스트 → data-screen 매핑 (구현된 화면만)
-      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '발견A': 'feed', '발견B': 'feed-a2', '발견C': 'discovery-b' };
+      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '카카오검색': 'discovery-b' };
 
       chips.forEach(function (chip) {
         var label = (chip.textContent || '').trim();
@@ -4393,8 +4390,7 @@
           var mt = window.MoreTab;
           if (!mt) return;
           var current = mt.getActiveScreen();
-          // 발견C는 현재 hide — 복구 시 'discovery-c' 다시 추가
-          var order = ['home', 'wallet', 'feed', 'feed-a2', 'discovery-b'];
+          var order = ['home', 'wallet', 'discovery-b'];
           var idx = order.indexOf(current);
           var next = order[(idx + 1) % order.length];
           mt.activate(next);

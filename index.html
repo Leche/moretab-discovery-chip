@@ -1576,16 +1576,7 @@
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 var(--mask-end));
             mask-image: linear-gradient(to bottom, transparent 0%, #000 var(--mask-end));
   }
-  .bs-search-bg > .bs-blur:nth-child(1)  { --b: 0.2px; --mask-end: 20%;  top: 0;   height: 20%; }
-  .bs-search-bg > .bs-blur:nth-child(2)  { --b: 0.3px; --mask-end: 30%;  top: 5%;  height: 25%; }
-  .bs-search-bg > .bs-blur:nth-child(3)  { --b: 0.5px; --mask-end: 40%;  top: 12%; height: 28%; }
-  .bs-search-bg > .bs-blur:nth-child(4)  { --b: 0.7px; --mask-end: 50%;  top: 20%; height: 30%; }
-  .bs-search-bg > .bs-blur:nth-child(5)  { --b: 1px;   --mask-end: 55%;  top: 28%; height: 32%; }
-  .bs-search-bg > .bs-blur:nth-child(6)  { --b: 1.3px; --mask-end: 60%;  top: 37%; height: 33%; }
-  .bs-search-bg > .bs-blur:nth-child(7)  { --b: 1.7px; --mask-end: 65%;  top: 46%; height: 35%; }
-  .bs-search-bg > .bs-blur:nth-child(8)  { --b: 2.1px; --mask-end: 70%;  top: 55%; height: 36%; }
-  .bs-search-bg > .bs-blur:nth-child(9)  { --b: 2.5px; --mask-end: 80%;  top: 64%; height: 36%; }
-  .bs-search-bg > .bs-blur:nth-child(10) { --b: 3px;   --mask-end: 100%; top: 72%; height: 28%; }
+  /* 개별 레이어의 --b / --mask-end / top / height는 JS가 동적으로 생성 (24-step progressive blur) */
 
   /* White gradient — max alpha 0.5 (콘텐츠가 충분히 비치는 수준)
      9-stop 다단계 곡선으로 derivative 꺾임 분산 */
@@ -3719,18 +3710,8 @@
 
         </div>
 
-        <!-- Search bar bg (Figma 946:41261) — 10 blur layers + multi-stop white gradient -->
+        <!-- Search bar bg (Figma 946:41261) — progressive blur (JS가 .bs-blur 동적 생성) + white gradient -->
         <div class="bs-search-bg" aria-hidden="true">
-          <div class="bs-blur"></div>
-          <div class="bs-blur"></div>
-          <div class="bs-blur"></div>
-          <div class="bs-blur"></div>
-          <div class="bs-blur"></div>
-          <div class="bs-blur"></div>
-          <div class="bs-blur"></div>
-          <div class="bs-blur"></div>
-          <div class="bs-blur"></div>
-          <div class="bs-blur"></div>
           <div class="bs-grad"></div>
         </div>
 
@@ -3788,16 +3769,6 @@
       <!-- 풀페이지 floating search bar — bs-sheet/피드와 동일한 visual + 동일한 축소 모션
            클래스: __searchbar / __searchbar-bg (헤더 우측 .db-detail__search 아이콘과 충돌 회피) -->
       <div class="bs-search-bg db-detail__searchbar-bg" aria-hidden="true">
-        <div class="bs-blur"></div>
-        <div class="bs-blur"></div>
-        <div class="bs-blur"></div>
-        <div class="bs-blur"></div>
-        <div class="bs-blur"></div>
-        <div class="bs-blur"></div>
-        <div class="bs-blur"></div>
-        <div class="bs-blur"></div>
-        <div class="bs-blur"></div>
-        <div class="bs-blur"></div>
         <div class="bs-grad"></div>
       </div>
       <div class="bs-search db-detail__searchbar">
@@ -3822,16 +3793,6 @@
          스크롤에 따라 center 방향으로 단축/복귀 모션 (.is-compact)
          =================================================================== -->
     <div class="bs-search-bg bs-search-bg--fixed" aria-hidden="true">
-      <div class="bs-blur"></div>
-      <div class="bs-blur"></div>
-      <div class="bs-blur"></div>
-      <div class="bs-blur"></div>
-      <div class="bs-blur"></div>
-      <div class="bs-blur"></div>
-      <div class="bs-blur"></div>
-      <div class="bs-blur"></div>
-      <div class="bs-blur"></div>
-      <div class="bs-blur"></div>
       <div class="bs-grad"></div>
     </div>
     <div class="bs-search bs-search--fixed">
@@ -4270,6 +4231,41 @@
   </script>
 
   <script>
+    /* =========================================================================
+       Progressive blur — .bs-search-bg에 N=24 레이어를 동적 생성.
+       지수 곡선(blur) + 중첩 mask gradient로 단차 없는 부드러운 점진 블러.
+       각 레이어:
+         - blur(--b)    : 0.25px → 4.5px (quadratic ease-in)
+         - mask 시작점은 레이어 상단(transparent), 종료점(--mask-end)에서 opaque
+         - top / height : 점진적으로 아래로 밀려나며 bg 끝까지 확장
+       ======================================================================== */
+    (function () {
+      var bgs = document.querySelectorAll('.bs-search-bg');
+      if (!bgs.length) return;
+      var N = 24;
+      bgs.forEach(function (bg) {
+        var grad = bg.querySelector('.bs-grad');
+        // 기존 정적 .bs-blur 잔여물 제거 (있다면)
+        bg.querySelectorAll('.bs-blur').forEach(function (el) { el.remove(); });
+        for (var i = 0; i < N; i++) {
+          var t = i / (N - 1);                       // 0..1
+          var blur = (0.25 + 4.25 * t * t).toFixed(2);
+          var top = (t * 80).toFixed(2);             // 0% → 80%
+          var height = (100 - top).toFixed(2);
+          var maskEnd = (8 + t * 90).toFixed(2);     // 8% → 98%
+          var div = document.createElement('div');
+          div.className = 'bs-blur';
+          div.style.cssText =
+            'top:' + top + '%;' +
+            'height:' + height + '%;' +
+            '--b:' + blur + 'px;' +
+            '--mask-end:' + maskEnd + '%;';
+          if (grad) bg.insertBefore(div, grad);
+          else bg.appendChild(div);
+        }
+      });
+    })();
+
     /* 칩 클릭 → 화면 전환 (홈 ↔ 발견)
        - chip-bar의 각 .chip에 data-screen을 부여하고 클릭 시 해당 .screen[data-screen=...]을 활성화.
        - 현재 구현된 화면: '홈', '발견'. 지갑/게임은 자리만 잡아두고 클릭해도 화면 전환은 하지 않음.

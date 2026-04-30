@@ -835,6 +835,14 @@
     right: 0;
     /* bs-overlay(z 1000)보다 위 — bottom sheet가 tab-bar "뒤에서" 올라오고 dim도 tab-bar는 안 가림 */
     z-index: 1010;
+    transition: opacity 0.22s ease;
+  }
+  /* 2뎁스 풀페이지(db-detail) 진입 시 tab-bar fade out */
+  body:has(.db-detail.is-open) .tab-bar,
+  /* 발견A-1 칩의 카드 클릭으로 bs-sheet 호출된 경우에도 tab-bar fade out */
+  body.bs-hide-tabbar .tab-bar {
+    opacity: 0;
+    pointer-events: none;
   }
   .tab-bar .tabs {
     height: 49px;
@@ -1736,18 +1744,37 @@
   }
 
   /* 더미 키보드 호출 시 검색바 + 블러 배경 lift.
-     모든 컨텍스트(피드/시트/풀페이지)의 검색바 viewport bottom = 69+safe로 동일하므로
-     공통 formula: translateY = min(0, 49+safe - keyboard_h) — 키보드 위 20px가 되도록 lift */
+     컨텍스트별 검색바 natural viewport bottom이 다르므로 --natural-bottom 변수로 분기:
+       - 피드/시트:  69+safe → --natural-bottom: 69px
+       - 2뎁스:      40+safe → --natural-bottom: 40px
+     공통 formula: translateY = min(0, natural - 20 + safe - keyboard_h) — 키보드 위 20px lift */
   :root { --keyboard-h: 0px; }
   /* dummy keyboard 이미지(393x291)의 aspect-ratio 유지 → 디바이스 가로폭 비례 */
   body.is-keyboard-up { --keyboard-h: calc(100vw * 291 / 393); }
   .bs-search,
   .bs-search-bg {
+    --natural-bottom: 69px;
     transition: transform 0.25s ease;
+  }
+  .bs-search.db-detail__searchbar,
+  .bs-search-bg.db-detail__searchbar-bg {
+    --natural-bottom: 20px;
+  }
+  /* 발견B 칩(전 발견A-1)에서 호출된 bs-sheet — tab-bar 미노출 모드일 때
+     시트 내 검색바와 블러 배경을 2뎁스 풀페이지(db-detail)와 동일 위치로 정렬.
+     bs-search-bg 기본은 bottom: 49+safe(=tab-bar 위)인데, bar가 20+safe로 내려가면
+     bg가 bar 위에 떠 보이므로 bg도 bottom: 0으로 끌어내림 (db-detail과 동일) */
+  body.bs-hide-tabbar #bsOverlay .bs-search {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    --natural-bottom: 20px;
+  }
+  body.bs-hide-tabbar #bsOverlay .bs-search-bg {
+    bottom: 0;
+    --natural-bottom: 20px;
   }
   .bs-search.is-active-input,
   .bs-search-bg.is-active-input {
-    transform: translateY(min(0px, calc(49px + env(safe-area-inset-bottom, 0px) - var(--keyboard-h, 0px))));
+    transform: translateY(min(0px, calc(var(--natural-bottom, 69px) - 20px + env(safe-area-inset-bottom, 0px) - var(--keyboard-h, 0px))));
   }
 
   /* =====================================================================
@@ -1895,7 +1922,7 @@
     top: 0;
     left: 0;
     right: 0;
-    bottom: calc(49px + env(safe-area-inset-bottom, 0px));
+    bottom: 0;             /* tab-bar 미노출 → viewport 끝까지 확장 */
     z-index: 500;
     background: #ffffff;
     display: flex;
@@ -1976,7 +2003,8 @@
     flex: 1 1 auto;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 96px;
+    /* searchbar(40+safe ~ 92+safe) 위로 24px breathing room 확보 */
+    padding-bottom: calc(116px + env(safe-area-inset-bottom, 0px));
   }
 
   /* 풀페이지 floating search bar — db-detail 컨테이너 기준 absolute
@@ -1993,7 +2021,7 @@
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 20px;          /* db-detail 바닥(= tab-bar top) 위 20px */
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));  /* viewport 맨아래 기준 20px (safe-area 위) */
     z-index: 2;
   }
 
@@ -2814,13 +2842,15 @@
         <div class="chip"><span class="chip-txt">홈</span></div>
         <div class="chip"><span class="chip-txt">지갑</span></div>
         <div class="chip active"><span class="chip-txt">발견A</span></div>
-        <!-- 발견B 칩 — 발견A와 동일한 피드 + 카드 클릭 시 2뎁스 풀페이지로 진입 (비교용) -->
+        <!-- 발견B 칩 — 발견A 클론 + 카드 클릭 시 bs-sheet 진입 (단, tab-bar 미노출) -->
         <div class="chip"><span class="chip-txt">발견B</span></div>
-        <!-- 발견C 칩 — 옛 발견B(card-news/dbcard/dbshorts 디자인) 백업
+        <!-- 발견C 칩 — 발견A와 동일한 피드 + 카드 클릭 시 2뎁스 풀페이지로 진입 (비교용) -->
+        <div class="chip"><span class="chip-txt">발견C</span></div>
+        <!-- 발견_백업 칩 — 옛 발견B(card-news/dbcard/dbshorts 디자인) 백업
              현재 hide 처리. 복구하려면 style="display:none" 제거 + 아래 활성화 안내 참조:
-             - SCREEN_BY_LABEL 매핑은 이미 '발견C': 'discovery-c'로 유지 중
+             - SCREEN_BY_LABEL에 '발견_백업': 'discovery-c' 매핑 추가 필요
              - chip 사이클 순서에 'discovery-c' 추가 필요 (현재 제외됨) -->
-        <div class="chip" style="display:none"><span class="chip-txt">발견C</span></div>
+        <div class="chip" style="display:none"><span class="chip-txt">발견_백업</span></div>
       </div>
     </header>
 
@@ -3206,6 +3236,14 @@
 
       </section>
       <!-- /screen-feed -->
+      <!-- ===================================================================
+           SCREEN: FEED A-1 (발견A-1 칩) — 발견A의 .screen-feed 클론.
+           카드 클릭 시 bs-sheet 진입 (단, tab-bar는 미노출).
+           내용은 JS가 런타임에 .screen-feed의 자식 노드를 복제해 채웁니다.
+           =================================================================== -->
+      <section class="screen screen-feed" data-screen="feed-a2" id="screenFeedA2">
+      </section>
+      <!-- /screen-feed-a2 -->
       <!-- ===================================================================
            SCREEN: WALLET (지갑 칩 선택 시)
            =================================================================== -->
@@ -4277,7 +4315,7 @@
       if (!chips.length) return;
 
       // 칩 텍스트 → data-screen 매핑 (구현된 화면만)
-      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '발견A': 'feed', '발견B': 'discovery-b', '발견C': 'discovery-c' };
+      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '발견A': 'feed', '발견B': 'feed-a2', '발견C': 'discovery-b' };
 
       chips.forEach(function (chip) {
         var label = (chip.textContent || '').trim();
@@ -4304,7 +4342,8 @@
         document.body.classList.toggle('wallet-active', screenKey === 'wallet');
         document.body.classList.toggle('discovery-b-active', screenKey === 'discovery-b');
         document.body.classList.toggle('discovery-c-active', screenKey === 'discovery-c');
-        document.body.classList.toggle('feed-active', screenKey === 'feed');
+        // feed-a2도 feed와 동일한 body 토글로 처리 → 피드 floating 검색바/배경/패딩 룰 재사용
+        document.body.classList.toggle('feed-active', screenKey === 'feed' || screenKey === 'feed-a2');
         // 스크롤 리셋 + 헤더 reveal
         window.scrollTo({ top: 0, behavior: 'auto' });
         var topEl = document.querySelector('.top');
@@ -4355,7 +4394,7 @@
           if (!mt) return;
           var current = mt.getActiveScreen();
           // 발견C는 현재 hide — 복구 시 'discovery-c' 다시 추가
-          var order = ['home', 'wallet', 'feed', 'discovery-b'];
+          var order = ['home', 'wallet', 'feed', 'feed-a2', 'discovery-b'];
           var idx = order.indexOf(current);
           var next = order[(idx + 1) % order.length];
           mt.activate(next);
@@ -4569,6 +4608,7 @@
         if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
         if (typeof window.__exitSearchInputModes === 'function') window.__exitSearchInputModes();
         overlay.classList.remove('is-open');
+        document.body.classList.remove('bs-hide-tabbar');
         sheet.style.transform = '';  // drag로 변경된 inline transform 초기화
         closeTimer = setTimeout(function () {
           // 스크롤 리셋 — overlay.hidden=true 이전에 (visible 상태에서) 적용해야 모든 브라우저에서 안정
@@ -4579,6 +4619,16 @@
           closeTimer = null;
         }, DURATION);
       }
+
+      // 외부 트리거(예: 발견A-1 칩의 클론 카드)에서 bs-sheet를 호출하기 위한 API
+      // opts.hideTabBar=true → 시트 동안 tab-bar 미노출
+      window.__bsSheet = {
+        open: function (opts) {
+          if (opts && opts.hideTabBar) document.body.classList.add('bs-hide-tabbar');
+          else document.body.classList.remove('bs-hide-tabbar');
+          open();
+        }
+      };
 
       if (target) {
         target.addEventListener('click', function (e) {
@@ -4684,6 +4734,48 @@
       handler.addEventListener('touchstart', onDown, { passive: false });
       window.addEventListener('touchmove', onMove, { passive: false });
       window.addEventListener('touchend', onUp);
+    })();
+
+    /* =========================================================================
+       발견A-1 = 발견A 피드 클론 + 카드 클릭 시 bs-sheet 진입 (단, tab-bar 미노출)
+       ======================================================================== */
+    (function () {
+      var srcScreen = document.querySelector('.screen-feed');
+      var dstScreen = document.getElementById('screenFeedA2');
+      if (!srcScreen || !dstScreen) return;
+
+      // 발견A의 .screen-feed 자식 노드들을 발견A-1 컨테이너로 deep-clone
+      // (svg symbol defs는 ID 충돌 방지 위해 제외)
+      Array.prototype.forEach.call(srcScreen.children, function (child) {
+        if (child.tagName && child.tagName.toLowerCase() === 'svg') return;
+        dstScreen.appendChild(child.cloneNode(true));
+      });
+      // 클론 잔여물 정리
+      dstScreen.querySelectorAll('.fcard--dynamic').forEach(function (c) { c.remove(); });
+
+      // "노티드 우베 디저트" 카드를 진입점으로 지정
+      var trigger = null;
+      dstScreen.querySelectorAll('.fcard').forEach(function (c) {
+        var t = c.querySelector('.fcard__title');
+        if (t && t.textContent.trim() === '노티드 우베 디저트') trigger = c;
+      });
+      if (!trigger) return;
+
+      trigger.style.cursor = 'pointer';
+      trigger.setAttribute('tabindex', '0');
+      trigger.setAttribute('role', 'button');
+
+      function fire(e) {
+        if (e.target.closest('button')) return;
+        if (window.__bsSheet) window.__bsSheet.open({ hideTabBar: true });
+      }
+      trigger.addEventListener('click', fire);
+      trigger.addEventListener('keydown', function (e) {
+        if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) {
+          e.preventDefault();
+          fire(e);
+        }
+      });
     })();
 
     /* =========================================================================

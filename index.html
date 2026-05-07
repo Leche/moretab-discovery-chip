@@ -72,17 +72,24 @@
     justify-content: center;
     padding-bottom: 49px; /* tab-bar 높이 — 콘텐츠가 고정 탭바 아래로 가지 않도록 */
   }
-  /* 발견A/발견B는 floating search bar(축소 시각 36 + 20 gap + 20 buffer ≈ 76)가 자리하므로
-     본문이 검색바에 가려지지 않게 padding-bottom 확보 (= tab-bar 49 + 76 = 125)
-     이 값은 푸터 마지막 텍스트 → 컴팩트 검색바 top 간격을 30px(= 카드 → 푸터 첫 텍스트 간격)로 맞춤 */
-  body.feed-active, body.discovery-b-active { padding-bottom: 125px; }
-  html[data-standalone="true"] body.feed-active,
-  html[data-standalone="true"] body.discovery-b-active {
-    padding-bottom: calc(125px + env(safe-area-inset-bottom, 0px));
+  /* 발견A/발견B/카나나픽 — floating search bar가 상단으로 이동했으므로
+     padding-bottom은 기본값(tab-bar 49)만 유지하면 충분. 추가 76px buffer 제거.
+     padding-top 계산:
+       104(헤더) + 6(검색바 위 갭) + 52(검색바 input) + 16(1번 카드 갭) - 6(screen 자체 padding-top) = 172px
+     ※ screen-discovery-b/screen-feed 본인이 padding: 6px 16px 0를 갖고 있어서
+        feed padding-top에서 6px 빼야 실제 시각 gap이 16px이 됨 */
+  body.feed-active .feed,
+  body.discovery-b-active .feed {
+    padding-top: 172px;
+  }
+  html[data-standalone="true"] body.feed-active .feed,
+  html[data-standalone="true"] body.discovery-b-active .feed {
+    padding-top: calc(172px + env(safe-area-inset-top, 0px));
   }
   @media all and (display-mode: standalone) {
-    body.feed-active, body.discovery-b-active {
-      padding-bottom: calc(125px + env(safe-area-inset-bottom, 0px));
+    body.feed-active .feed,
+    body.discovery-b-active .feed {
+      padding-top: calc(172px + env(safe-area-inset-top, 0px));
     }
   }
 
@@ -1607,22 +1614,6 @@
       rgba(247,247,247,0.50) 100%
     );
   }
-  /* fixed 버전 gradient — .device 배경(#f5f5f5)과 동일 컬러, 100% 불투명까지 fill
-     (흰색 #f7f7f7 + 회색 .device = 거의 흰색으로 보이는 문제 해결) */
-  .bs-search-bg--fixed > .bs-grad {
-    background: linear-gradient(
-      to bottom,
-      rgba(245,245,245,0)    0%,
-      rgba(245,245,245,0.07) 18%,
-      rgba(245,245,245,0.18) 32%,
-      rgba(245,245,245,0.30) 45%,
-      rgba(245,245,245,0.52) 57%,
-      rgba(245,245,245,0.72) 67%,
-      rgba(245,245,245,0.88) 76%,
-      rgba(245,245,245,0.96) 84%,
-      rgba(245,245,245,1.00) 100%
-    );
-  }
   /* blur/opacity 토글 — is-compact 시 배경 블러 전체 숨김 */
   .bs-search-bg { transition: opacity 0.22s cubic-bezier(0.32, 0.72, 0, 1); }
   .bs-search-bg.is-compact { opacity: 0; }
@@ -1650,31 +1641,62 @@
   }
   /* compact: scale(0.7) → 시각 높이 52×0.7=36.4≈36px, width는 JS가 텍스트 실측값 주입 */
   .bs-search-area.is-compact { transform: scale(0.7); }
+  /* 피드 floating 검색바(카나나픽)만: compact 시 가로만 줄어들고 세로는 유지.
+     scale 제거 → 세로 52px 유지. 가로는 JS가 inline style.width로 제어(텍스트 실측 기반).
+     bs-sheet·db-detail은 기존 scale(0.7) 유지 (해당 컨텍스트 디자인 유지). */
+  .bs-search--fixed .bs-search-area.is-compact { transform: none; }
 
   /* 가이드(placeholder) 상태 input — 피드 floating search bar에서 사용 */
   .bs-search-input--guide .bs-search-input__text { color: #767676; }
 
   /* =====================================================================
-     Feed-level floating search bar — 발견A/발견B 활성 시 GNB 위 fixed
-     - bs-search-bg / bs-search 와 동일 비주얼, 단 position: fixed (viewport 기준)
-     - z-index 100~101 (tab-bar 1010 아래, 피드 콘텐츠 위)
+     Feed-level floating search bar — 카나나픽(전 발견C) 활성 시 .top 헤더 바로 아래 fixed
+     - 위치: 하단(탭바 위) → 상단(칩바 바로 아래)으로 이동
+     - 사유: 하단 탭바 근처에 노출될 꼬리표 배너·토스트와 충돌 방지
+     - BG 요소(progressive blur + gradient) 제거 — 검색바 자체 backdrop-filter만 사용
+     - .top.is-hidden 시: 헤더와 함께 위로 슬라이드(:has() 룰)
+     - z-index 101 (tab-bar 1010 아래, 피드 콘텐츠 위)
      ===================================================================== */
-  .bs-search-bg--fixed {
+  .bs-search--fixed {
     position: fixed;
-    z-index: 100;
+    z-index: 101;
     display: none;
-    /* bottom: 0 으로 연장 → 뷰포트 최하단까지 영역 확보
-       height는 동일한 상단 시작점 유지: 158 + 49 + safe-bottom
-       background-color 없음 → blur 위에 그레이 overlay 안 깔림.
-       빈 영역의 그레이 fill은 .device(#f5f5f5) 자체 배경에서 자연스럽게 나옴 */
-    bottom: 0;
-    height: calc(207px + env(safe-area-inset-bottom, 0px));
+    bottom: auto;
+    /* 칩바 하단(104+safe-top) + 6px 갭 = 검색바 input top */
+    top: calc(110px + env(safe-area-inset-top, 0px));
+    transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
-  .bs-search--fixed    { position: fixed; z-index: 101; display: none; }
-  body.feed-active .bs-search-bg--fixed,
-  body.discovery-b-active .bs-search-bg--fixed { display: block; }
+  /* .top 헤더가 스크롤로 숨겨질 때, 검색바도 같이 위로 슬라이드.
+     단, status bar(safe-area-inset-top) 영역으로는 침범하지 않도록 translate는 .top의
+     "컨텐츠 높이(104)"만 이동. PWA에서 검색바가 status bar와 겹치는 버그 방지.
+     결과: 검색바 visual top = 6 + safe-top (status bar 바로 아래 6px 간격) */
+  body:has(.top.is-hidden) .bs-search--fixed {
+    transform: translateY(-104px);
+  }
   body.feed-active .bs-search--fixed,
   body.discovery-b-active .bs-search--fixed { display: flex; }
+  /* 피드 floating 검색바(카나나픽) input — 스크롤 위치별 보더/쉐도우/배경 분기:
+       atTop:    보더 ON (.fcard--b 동일 1px #F5F5F5 outline), 쉐도우 OFF,
+                 배경 #ffffff(불투명), backdrop-filter OFF
+       scrolled: 쉐도우 ON (50% 감소했던 값의 150% = 거의 원본 수준), 보더 OFF,
+                 배경 #ffffff/80%, backdrop-filter blur(14px) ON
+     detection: .top 스크롤 핸들러가 토글하는 .top.has-scroll 클래스 활용. */
+  .bs-search--fixed .bs-search-input {
+    box-shadow: 0 0 0 1px #F5F5F5;
+    background: #ffffff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: box-shadow 200ms cubic-bezier(0.32, 0.72, 0, 1),
+                background 200ms cubic-bezier(0.32, 0.72, 0, 1),
+                backdrop-filter 200ms cubic-bezier(0.32, 0.72, 0, 1),
+                -webkit-backdrop-filter 200ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  body:has(.top.has-scroll) .bs-search--fixed .bs-search-input {
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.045), 0 3px 16px rgba(0, 0, 0, 0.1125);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
   .bs-search-input {
     flex: 1 1 auto; min-width: 0;
     height: 52px;
@@ -1684,7 +1706,7 @@
     border-radius: 52px;
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.06), 0 3px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.03), 0 3px 16px rgba(0, 0, 0, 0.075);
     display: flex; align-items: center; gap: 10px;
     padding: 12px 14px;
   }
@@ -1711,7 +1733,7 @@
     border-radius: 50%;
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.06), 0 3px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.03), 0 3px 16px rgba(0, 0, 0, 0.075);
     padding: 0;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
@@ -1776,6 +1798,10 @@
   .bs-search-bg.is-active-input {
     transform: translateY(min(0px, calc(var(--natural-bottom, 69px) - 20px + env(safe-area-inset-bottom, 0px) - var(--keyboard-h, 0px))));
   }
+  /* 피드 floating 검색바(상단 앵커)는 키보드와 충돌하지 않으므로 lift 불필요 — translate 무력화 */
+  .bs-search.bs-search--fixed.is-active-input {
+    transform: none;
+  }
 
   /* =====================================================================
      DUMMY KEYBOARD — 더보기탭 PWA 환경에서 OS 키보드 + 폼 어시스턴트 바
@@ -1837,7 +1863,7 @@
     background: #191919;
     border: none;
     border-radius: 50%;
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.06), 0 3px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.03), 0 3px 16px rgba(0, 0, 0, 0.075);
     padding: 0;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
@@ -2814,7 +2840,7 @@
   }
 </style>
 </head>
-<body class="feed-active">
+<body class="discovery-b-active">
   <!-- Status bar 영역 마스크 — translucent status bar 뒤를 항상 흰색으로 가림 (시트 열릴 땐 bs-overlay가 dim으로 덮음) -->
   <div class="status-bar-mask" aria-hidden="true"></div>
   <div class="device">
@@ -2841,11 +2867,12 @@
       <div class="chip-bar">
         <div class="chip"><span class="chip-txt">홈</span></div>
         <div class="chip"><span class="chip-txt">지갑</span></div>
-        <div class="chip active"><span class="chip-txt">발견A</span></div>
-        <!-- 발견B 칩 — 발견A 클론 + 카드 클릭 시 bs-sheet 진입 (단, tab-bar 미노출) -->
-        <div class="chip"><span class="chip-txt">발견B</span></div>
-        <!-- 발견C 칩 — 발견A와 동일한 피드 + 카드 클릭 시 2뎁스 풀페이지로 진입 (비교용) -->
-        <div class="chip"><span class="chip-txt">발견C</span></div>
+        <!-- 발견A 칩 — 스쿼드 결정으로 hide (발견C 메인 선택) -->
+        <div class="chip" style="display:none"><span class="chip-txt">발견A</span></div>
+        <!-- 발견B 칩 — 스쿼드 결정으로 hide (서브 방향이지만 프로토 노출은 발견C만) -->
+        <div class="chip" style="display:none"><span class="chip-txt">발견B</span></div>
+        <!-- 카나나픽 칩 (구 발견C) — 발견A 피드 + 카드 클릭 시 2뎁스 풀페이지 (스쿼드 결정 메인 방향) -->
+        <div class="chip active"><span class="chip-txt">카나나픽</span></div>
         <!-- 발견_백업 칩 — 옛 발견B(card-news/dbcard/dbshorts 디자인) 백업
              현재 hide 처리. 복구하려면 style="display:none" 제거 + 아래 활성화 안내 참조:
              - SCREEN_BY_LABEL에 '발견_백업': 'discovery-c' 매핑 추가 필요
@@ -2859,7 +2886,7 @@
       <!-- ===================================================================
            SCREEN: FEED (발견 칩 선택 시) — 기존 콘텐츠를 screen 컨테이너로 wrap
            =================================================================== -->
-      <section class="screen screen-feed is-active" data-screen="feed">
+      <section class="screen screen-feed" data-screen="feed">
 
       <!-- Footer 4-action 아이콘 (Like/Reply/Share/Bookmark) — Figma export, 카드마다 <use> 참조 -->
       <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
@@ -3223,7 +3250,7 @@
         <div class="feed-footer__top">
           <div class="feed-footer__title-row">
             <span class="feed-footer__title">카나나 검색</span>
-            <span class="feed-footer__beta"><img src="https://www.figma.com/api/mcp/asset/7909e0cd-b751-43f6-a2d8-f1e06c8d6902" alt="beta"></span>
+            <span class="feed-footer__beta"><img src="icons/beta.svg" alt="beta"></span>
           </div>
           <p class="feed-footer__desc">카나나 검색은 AI 기반 검색 서비스이며, 결과가 정확하지 않을 수 있습니다.</p>
         </div>
@@ -3259,7 +3286,7 @@
            발견A의 .screen-feed 콘텐츠를 JS로 클론하여 채움 (비교용 피드 복제)
            카드 클릭 → bs-sheet 대신 2뎁스 풀페이지(.db-detail) 진입
            =================================================================== -->
-      <section class="screen screen-discovery-b" data-screen="discovery-b" id="screenDiscoveryB">
+      <section class="screen screen-discovery-b is-active" data-screen="discovery-b" id="screenDiscoveryB">
         <!-- JS가 런타임에 .screen-feed의 자식 노드를 복제해 채웁니다. -->
       </section>
       <!-- /screen-discovery-b -->
@@ -3827,13 +3854,11 @@
     </aside>
 
     <!-- ===================================================================
-         FEED FLOATING SEARCH BAR — 발견A/발견B 활성 시 GNB 위 floating
+         FEED FLOATING SEARCH BAR — 카나나픽(전 발견C) 활성 시 .top 헤더 바로 아래 floating
          "카나나에게 물어보세요" 가이드 텍스트 (#767676)
          스크롤에 따라 center 방향으로 단축/복귀 모션 (.is-compact)
+         BG 요소(progressive blur + gradient)는 제거 — 검색바 자체 backdrop-filter만 사용
          =================================================================== -->
-    <div class="bs-search-bg bs-search-bg--fixed" aria-hidden="true">
-      <div class="bs-grad"></div>
-    </div>
     <div class="bs-search bs-search--fixed">
       <div class="bs-search-area" id="feedSearchArea">
         <div class="bs-search-input bs-search-input--guide">
@@ -4315,7 +4340,7 @@
       if (!chips.length) return;
 
       // 칩 텍스트 → data-screen 매핑 (구현된 화면만)
-      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '발견A': 'feed', '발견B': 'feed-a2', '발견C': 'discovery-b' };
+      var SCREEN_BY_LABEL = { '홈': 'home', '지갑': 'wallet', '발견A': 'feed', '발견B': 'feed-a2', '카나나픽': 'discovery-b' };
 
       chips.forEach(function (chip) {
         var label = (chip.textContent || '').trim();
@@ -4393,8 +4418,8 @@
           var mt = window.MoreTab;
           if (!mt) return;
           var current = mt.getActiveScreen();
-          // 발견C는 현재 hide — 복구 시 'discovery-c' 다시 추가
-          var order = ['home', 'wallet', 'feed', 'feed-a2', 'discovery-b'];
+          // 발견A('feed')·발견B('feed-a2')·발견_백업('discovery-c')은 hide — 카나나픽(discovery-b)만 사이클
+          var order = ['home', 'wallet', 'discovery-b'];
           var idx = order.indexOf(current);
           var next = order[(idx + 1) % order.length];
           mt.activate(next);
@@ -4995,14 +5020,14 @@
           }
 
           if (opts.searchArea) {
+            // 정책: 최상단이 아니면 무조건 compact, 최상단에서만 expand.
+            // 단순화 이유: input 모드 진입 시 compact가 제거됨 → 이후 위로 스크롤로 input 모드가
+            // 해제될 때 compact가 복원되지 않는 버그를 막기 위해 방향 체크 제거.
+            // 결과: 아래로/위로 스크롤 모두 compact, atTop 도달만 expand.
             if (atTop) {
               setCompact(false);
-            } else if (atBottom) {
+            } else {
               setCompact(true);
-            } else if (y > lastY + DIR_DELTA) {
-              setCompact(true);
-            } else if (y < lastY - DIR_DELTA) {
-              setCompact(false);
             }
           }
 
@@ -5033,15 +5058,13 @@
         });
       }
 
-      // 2) 피드 floating search bar — window
+      // 2) 피드 floating search bar — window (BG 요소 제거됨, 검색바만 토글)
       var feedArea = document.getElementById('feedSearchArea');
-      var feedBg   = document.querySelector('.bs-search-bg--fixed');
       if (feedArea) {
         attachScrollUI(window, function () {
           return window.scrollY || window.pageYOffset || 0;
         }, {
           searchArea: feedArea,
-          bgEl: feedBg,
           compactWidth: calcCompactWidth(feedArea)
         });
       }

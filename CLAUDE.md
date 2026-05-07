@@ -1,3 +1,9 @@
+> **KakaoTalk DS 마스터 레퍼런스**: `~/Documents/Claude/Projects/카카오톡 디자인 시스템 Figma MCP/CLAUDE.md` 참조 (컬러 토큰·컴포넌트 키·타이포·더보기탭 영역별 스펙).
+>
+> 이 파일은 위 마스터를 보완하는 **repo별 작업 컨텍스트**만 담고 있음.
+
+---
+
 # 작업 정책 (Claude memory)
 
 ## 1. Figma `visible=false` 레이어는 절대 코드로 구현하지 않는다

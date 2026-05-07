@@ -4944,12 +4944,14 @@
 
     /* =========================================================================
        bs-search-area 스크롤 단축 모션 + db-detail 헤더 reveal
-       - 축소 트리거: 컨텐츠가 위로 스크롤(scrollTop 증가) → 즉시 center 방향 50% 축소
-       - 복귀 트리거: 반대로 스크롤(scrollTop 감소) → 즉시 원 사이즈 복귀
-         (top까지 갈 필요 없이 방향 전환 직후 복귀)
-       - 최상단(scrollTop ~ 0)에서는 항상 원 사이즈
+       - 정책 두 가지 (opts.directionMode 로 분기):
+         · directionMode=false (기본, bs-sheet / 피드 카나나픽 칩):
+           최상단이 아니면 항상 compact, atTop 도달 시에만 expand.
+         · directionMode=true  (db-detail 풀페이지):
+           아래로 스크롤(dy>0) → compact / 위로 스크롤(dy<0) → expand 복귀.
+           atTop은 무조건 expand.
        - 적용: 1) bs-sheet 내부 (.bs-scroll), 2) 피드 floating(window),
-              3) db-detail 풀페이지 (.db-detail__body)
+              3) db-detail 풀페이지 (.db-detail__body) — 이 케이스만 directionMode
        - db-detail 헤더 타이틀+divider는 scrollTop > 0 일 때만 노출
        - rAF 스로틀로 성능 보호
        ======================================================================== */
@@ -4980,6 +4982,7 @@
         // opts.bgEl:          블러 배경 요소 — compact 시 함께 is-compact 토글해 블러 숨김
         // opts.compactWidth:  compact 시 searchArea에 설정할 px 너비 (숫자)
         // opts.detailEl:      reveal 토글 대상 (.db-detail) — title/divider 노출용
+        // opts.directionMode: true면 방향 기반(down=compact, up=expand). false면 atTop만 expand.
         var lastY = getScrollTop();
         var ticking = false;
         var settleTimer = null;
@@ -5011,22 +5014,26 @@
           // bounce zone 가드: 양 끝 elastic bounce 시 lastY를 갱신하지 않아 오방향 delta 방지
           var atTop    = y <= TOP_DEADZONE;
           var atBottom = maxY > 0 && y >= maxY - 4;
+          var dy = y - lastY;
 
           // 입력 모드 중 스크롤 발생 시 input mode 해제 (전체 검색바)
           //   debounce 500ms — iOS 키보드 호출 직후의 phantom scroll로 의도치 않게 닫히는 것 방지
-          if (Math.abs(y - lastY) > DIR_DELTA &&
+          if (Math.abs(dy) > DIR_DELTA &&
               typeof window.__exitSearchInputModes === 'function') {
             window.__exitSearchInputModes({ fromScroll: true });
           }
 
           if (opts.searchArea) {
-            // 정책: 최상단이 아니면 무조건 compact, 최상단에서만 expand.
-            // 단순화 이유: input 모드 진입 시 compact가 제거됨 → 이후 위로 스크롤로 input 모드가
-            // 해제될 때 compact가 복원되지 않는 버그를 막기 위해 방향 체크 제거.
-            // 결과: 아래로/위로 스크롤 모두 compact, atTop 도달만 expand.
             if (atTop) {
               setCompact(false);
+            } else if (opts.directionMode) {
+              // 방향 기반: 아래로(dy>0)면 compact, 위로(dy<0)면 expand. 미세 떨림은 무시.
+              if (dy > DIR_DELTA) setCompact(true);
+              else if (dy < -DIR_DELTA) setCompact(false);
             } else {
+              // 비-방향(피드/시트): 최상단이 아니면 무조건 compact.
+              // 이유: input 모드 진입 시 compact가 제거됨 → 위로 스크롤로 input 모드가
+              // 해제될 때 compact가 복원되지 않는 버그를 막기 위해 방향 체크 제거.
               setCompact(true);
             }
           }
@@ -5069,7 +5076,7 @@
         });
       }
 
-      // 3) db-detail 풀페이지 — 검색바 축소만 처리.
+      // 3) db-detail 풀페이지 — 검색바 축소만 처리. directionMode=true (방향 기반).
       //    is-scrolled 토글은 db-detail 초기화부의 IntersectionObserver가 단일 source of truth.
       var detailBody = document.getElementById('dbDetailBody');
       var detailEl = document.getElementById('dbDetail');
@@ -5079,7 +5086,8 @@
         attachScrollUI(detailBody, function () { return detailBody.scrollTop; }, {
           searchArea: detailArea,
           bgEl: detailBg,
-          compactWidth: calcCompactWidth(detailArea)
+          compactWidth: calcCompactWidth(detailArea),
+          directionMode: true
         });
       }
     })();
